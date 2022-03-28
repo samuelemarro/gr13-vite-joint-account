@@ -33,21 +33,25 @@ contract JointAccount {
     }
 
     function createTransferMotion(vitetoken _tokenId, uint256 _transferAmount, address _to) external {
+        require(_findMember(msg.sender) != NULL, "JointAccount: not a member");
         motions.push(Motion(MotionType.TRANSFER, _tokenId, _transferAmount, _to, NULL, msg.sender, 0, true));
         _voteMotion(motions.length - 1);
     }
 
     function createAddMotion(address _member) external {
+        require(_findMember(msg.sender) != NULL, "JointAccount: not a member");
         motions.push(Motion(MotionType.ADD_MEMBER, NULL_TOKEN, NULL, _member, NULL, msg.sender, 0, true));
         _voteMotion(motions.length - 1);
     }
 
     function createRemoveMotion(address _member) external {
+        require(_findMember(msg.sender) != NULL, "JointAccount: not a member");
         motions.push(Motion(MotionType.REMOVE_MEMBER, NULL_TOKEN, NULL, _member, NULL, msg.sender, 0, true));
         _voteMotion(motions.length - 1);
     }
 
     function createChangeThresholdMotion(uint256 _threshold) external {
+        require(_findMember(msg.sender) != NULL, "JointAccount: not a member");
         motions.push(Motion(MotionType.CHANGE_THRESHOLD, NULL_TOKEN, NULL, NULL_ADDRESS, _threshold, msg.sender, 0, true));
         _voteMotion(motions.length - 1);
     }
@@ -58,11 +62,35 @@ contract JointAccount {
     }
 
     function _addMember(address _member) internal {
+        require(_findMember(_member) == NULL, "JointAccount: member already exists");
         members.push(_member);
     }
 
+    function _findMember(address _member) private view returns(uint256) {
+        bool found = false;
+        uint256 index;
+        for (index = 0; index < members.length && !found; index++) {
+            if (members[index] == _member) {
+                found = true;
+            }
+        }
+
+        if (found) {
+            return index;
+        } else {
+            return NULL;
+        }
+    }
+
     function _removeMember(address _member) internal {
-        
+        uint256 index = _findMember(_member);
+        require(index != NULL, "JointAccount: member not found");
+
+        for (uint256 i = index; i < members.length - 1; i++) {
+            members[i] = members[i + 1];
+        }
+
+        members.pop();
     }
 
     function _changeThreshold(uint256 _threshold) internal {
@@ -91,6 +119,7 @@ contract JointAccount {
     }
 
     function voteMotion(uint256 _motionId) internal {
+        require(_findMember(msg.sender) != NULL, "JointAccount: not a member");
         require(!votes[_motionId][msg.sender], "JointAccount: you have already voted on this motion");
         _voteMotion(_motionId);
     }

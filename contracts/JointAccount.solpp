@@ -21,7 +21,6 @@ contract JointAccount {
         bool active;
     }
     address[] members;
-    mapping(vitetoken => uint256) balances;
     uint256 approvalThreshold;
 
     Motion[] motions;
@@ -61,7 +60,7 @@ contract JointAccount {
     }
 
     function _transfer(vitetoken _tokenId, uint256 _transferAmount, address _to) internal {
-        require(balances[_tokenId] >= _transferAmount, "JointAccount: insufficient balance");
+        require(balance(_tokenId) >= _transferAmount, "JointAccount: insufficient balance");
         payable(_to).transfer(_tokenId, _transferAmount);
     }
 

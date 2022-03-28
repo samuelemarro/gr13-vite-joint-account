@@ -1,0 +1,98 @@
+// SPDX-License-Identifier: MIT
+/// @title Joint Account implementation for GR13 Hackathon
+/// @author Samuele Marro
+
+pragma soliditypp ^0.8.0;
+
+contract JointAccount {
+    uint256 private constant NULL = 2**256 - 1;
+    address private constant NULL_ADDRESS = "vite_0000000000000000000000000000000000000000a4f3a0cb58";
+    vitetoken private constant NULL_TOKEN = "tti_5649544520544f4b454e6e40";
+    enum MotionType { TRANSFER, ADD_MEMBER, REMOVE_MEMBER, CHANGE_THRESHOLD }
+    struct Motion {
+        MotionType motionType;
+        vitetoken tokenId;
+        uint256 transferAmount;
+        address to;
+        uint256 threshold;
+
+        address proposer;
+        uint256 voteCount;
+        bool active;
+    }
+    address[] members;
+    mapping(vitetoken => uint256) balances;
+    uint256 approvalThreshold;
+
+    Motion[] motions;
+    mapping(uint256 => mapping(address => bool)) votes;
+
+    constructor(address[] memory _members, uint256 _approvalThreshold) {
+        members = _members;
+        approvalThreshold = _approvalThreshold;
+    }
+
+    function createTransferMotion(vitetoken _tokenId, uint256 _transferAmount, address _to) external {
+        motions.push(Motion(MotionType.TRANSFER, _tokenId, _transferAmount, _to, NULL, msg.sender, 0, true));
+        _voteMotion(motions.length - 1);
+    }
+
+    function createAddMotion(address _member) external {
+        motions.push(Motion(MotionType.ADD_MEMBER, NULL_TOKEN, NULL, _member, NULL, msg.sender, 0, true));
+        _voteMotion(motions.length - 1);
+    }
+
+    function createRemoveMotion(address _member) external {
+        motions.push(Motion(MotionType.REMOVE_MEMBER, NULL_TOKEN, NULL, _member, NULL, msg.sender, 0, true));
+        _voteMotion(motions.length - 1);
+    }
+
+    function createChangeThresholdMotion(uint256 _threshold) external {
+        motions.push(Motion(MotionType.CHANGE_THRESHOLD, NULL_TOKEN, NULL, NULL_ADDRESS, _threshold, msg.sender, 0, true));
+        _voteMotion(motions.length - 1);
+    }
+
+    function _transfer(vitetoken _tokenId, uint256 _transferAmount, address _to) internal {
+        require(balances[_tokenId] >= _transferAmount, "JointAccount: insufficient balance");
+        payable(_to).transfer(_tokenId, _transferAmount);
+    }
+
+    function _addMember(address _member) internal {
+        members.push(_member);
+    }
+
+    function _removeMember(address _member) internal {
+        
+    }
+
+    function _changeThreshold(uint256 _threshold) internal {
+        approvalThreshold = _threshold;
+    }
+
+    function _voteMotion(uint256 _motionId) internal {
+        votes[_motionId][msg.sender] = true;
+        motions[_motionId].voteCount++;
+
+        if (motions[_motionId].voteCount >= approvalThreshold) {
+            motions[_motionId].active = false;
+
+            // Note: Solidity doesn't have switch statements
+            if (motions[_motionId].motionType == MotionType.TRANSFER) {
+                _transfer(motions[_motionId].tokenId, motions[_motionId].transferAmount, motions[_motionId].to);
+            } else if (motions[_motionId].motionType == MotionType.ADD_MEMBER) {
+                _addMember(motions[_motionId].to);
+            } else if (motions[_motionId].motionType == MotionType.REMOVE_MEMBER) {
+                _removeMember(motions[_motionId].to);
+            } else if (motions[_motionId].motionType == MotionType.CHANGE_THRESHOLD) {
+                _changeThreshold(motions[_motionId].threshold);
+            }
+            motions[_motionId].proposer = NULL_ADDRESS;
+        }
+    }
+
+    function voteMotion(uint256 _motionId) internal {
+        require(!votes[_motionId][msg.sender], "JointAccount: you have already voted on this motion");
+        _voteMotion(_motionId);
+    }
+
+}

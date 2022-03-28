@@ -7,7 +7,7 @@ pragma soliditypp ^0.8.0;
 contract JointAccount {
     uint256 private constant NULL = 2**256 - 1;
     address private constant NULL_ADDRESS = "vite_0000000000000000000000000000000000000000a4f3a0cb58";
-    vitetoken private constant NULL_TOKEN = "tti_5649544520544f4b454e6e40";
+    vitetoken private constant NULL_TOKEN = "tti_000000000000000000004cfd";
     enum MotionType { TRANSFER, ADD_MEMBER, REMOVE_MEMBER, CHANGE_THRESHOLD }
     struct Motion {
         MotionType motionType;
@@ -28,6 +28,10 @@ contract JointAccount {
     mapping(uint256 => mapping(address => bool)) votes;
 
     constructor(address[] memory _members, uint256 _approvalThreshold) {
+        require(_members.length > 0, "JointAccount: at least one member must be specified");
+        require(_approvalThreshold > 0, "JointAccount: approval threshold must be greater than 0");
+        require(_approvalThreshold <= _members.length, "JointAccount: approval threshold must be less than or equal to the number of members");
+
         members = _members;
         approvalThreshold = _approvalThreshold;
     }

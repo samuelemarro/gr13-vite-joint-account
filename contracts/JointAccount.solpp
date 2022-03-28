@@ -114,14 +114,29 @@ contract JointAccount {
             } else if (motions[_motionId].motionType == MotionType.CHANGE_THRESHOLD) {
                 _changeThreshold(motions[_motionId].threshold);
             }
-            motions[_motionId].proposer = NULL_ADDRESS;
         }
     }
 
     function voteMotion(uint256 _motionId) internal {
         require(_findMember(msg.sender) != NULL, "JointAccount: not a member");
+        require(motions[_motionId].active, "JointAccount: motion is not active");
         require(!votes[_motionId][msg.sender], "JointAccount: you have already voted on this motion");
         _voteMotion(_motionId);
+    }
+
+    function cancelVote(uint256 _motionId) internal {
+        require(_findMember(msg.sender) != NULL, "JointAccount: not a member");
+        require(motions[_motionId].active, "JointAccount: motion is not active");
+        require(votes[_motionId][msg.sender], "JointAccount: you have not voted on this motion");
+        votes[_motionId][msg.sender] = false;
+        motions[_motionId].voteCount--;
+    }
+
+    function cancelMotion(uint256 _motionId) internal {
+        require(_findMember(msg.sender) != NULL, "JointAccount: not a member");
+        require(motions[_motionId].active, "JointAccount: motion is not active");
+        require(motions[_motionId].proposer == msg.sender, "JointAccount: you are not the proposer of this motion");
+        motions[_motionId].active = false;
     }
 
 }

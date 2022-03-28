@@ -5,6 +5,48 @@
 pragma soliditypp ^0.8.0;
 
 contract JointAccount {
+    event MotionCreated (
+        uint256 indexed motionId,
+        uint256 indexed motionType,
+        address indexed proposer,
+        vitetoken tokenId,
+        uint256 transferAmount,
+        address to,
+        uint256 threshold
+    );
+
+    event MotionCancelled (
+        uint256 motionId
+    );
+
+    event Vote (
+        uint256 indexed motionId,
+        address indexed voter,
+        bool vote
+    );
+
+    event Transfer (
+        uint256 indexed motionId,
+        vitetoken indexed tokenId,
+        address indexed to,
+        uint256 amount
+    );
+
+    event MemberAdded (
+        uint256 indexed motionId,
+        address indexed member
+    );
+
+    event MemberRemoved (
+        uint256 indexed motionId,
+        address indexed member
+    );
+
+    event ThresholdChanged (
+        uint256 indexed motionId,
+        uint256 threshold
+    );    
+
     uint256 private constant NULL = 2**256 - 1;
     address private constant NULL_ADDRESS = "vite_0000000000000000000000000000000000000000a4f3a0cb58";
     vitetoken private constant NULL_TOKEN = "tti_000000000000000000004cfd";
@@ -38,35 +80,47 @@ contract JointAccount {
     function createTransferMotion(vitetoken _tokenId, uint256 _transferAmount, address _to) external {
         require(_findMember(msg.sender) != NULL, "JointAccount: not a member");
         motions.push(Motion(MotionType.TRANSFER, _tokenId, _transferAmount, _to, NULL, msg.sender, 0, true));
+
+        emit MotionCreated(motions.length - 1, uint256(MotionType.TRANSFER), msg.sender, _tokenId, _transferAmount, _to, NULL);
         _voteMotion(motions.length - 1);
     }
 
     function createAddMotion(address _member) external {
         require(_findMember(msg.sender) != NULL, "JointAccount: not a member");
         motions.push(Motion(MotionType.ADD_MEMBER, NULL_TOKEN, NULL, _member, NULL, msg.sender, 0, true));
+
+        emit MotionCreated(motions.length - 1, uint256(MotionType.ADD_MEMBER), msg.sender, NULL_TOKEN, NULL, _member, NULL);
         _voteMotion(motions.length - 1);
     }
 
     function createRemoveMotion(address _member) external {
         require(_findMember(msg.sender) != NULL, "JointAccount: not a member");
         motions.push(Motion(MotionType.REMOVE_MEMBER, NULL_TOKEN, NULL, _member, NULL, msg.sender, 0, true));
+
+        emit MotionCreated(motions.length - 1, uint256(MotionType.REMOVE_MEMBER), msg.sender, NULL_TOKEN, NULL, _member, NULL);
         _voteMotion(motions.length - 1);
     }
 
     function createChangeThresholdMotion(uint256 _threshold) external {
         require(_findMember(msg.sender) != NULL, "JointAccount: not a member");
         motions.push(Motion(MotionType.CHANGE_THRESHOLD, NULL_TOKEN, NULL, NULL_ADDRESS, _threshold, msg.sender, 0, true));
+
+        emit MotionCreated(motions.length - 1, uint256(MotionType.CHANGE_THRESHOLD), msg.sender, NULL_TOKEN, NULL, NULL_ADDRESS, _threshold);
         _voteMotion(motions.length - 1);
     }
 
-    function _transfer(vitetoken _tokenId, uint256 _transferAmount, address _to) internal {
+    function _transfer(uint256 _motionId, vitetoken _tokenId, uint256 _transferAmount, address _to) internal {
         require(balance(_tokenId) >= _transferAmount, "JointAccount: insufficient balance");
         payable(_to).transfer(_tokenId, _transferAmount);
+
+        emit Transfer(_motionId, _tokenId, _to, _transferAmount);
     }
 
-    function _addMember(address _member) internal {
+    function _addMember(uint256 _motionId, address _member) internal {
         require(_findMember(_member) == NULL, "JointAccount: member already exists");
         members.push(_member);
+
+        emit MemberAdded(_motionId, _member);
     }
 
     function _findMember(address _member) private view returns(uint256) {
@@ -85,7 +139,7 @@ contract JointAccount {
         }
     }
 
-    function _removeMember(address _member) internal {
+    function _removeMember(uint256 _motionId, address _member) internal {
         uint256 index = _findMember(_member);
         require(index != NULL, "JointAccount: member not found");
 
@@ -94,28 +148,34 @@ contract JointAccount {
         }
 
         members.pop();
+
+        emit MemberRemoved(_motionId, _member);
     }
 
-    function _changeThreshold(uint256 _threshold) internal {
+    function _changeThreshold(uint256 _motionId, uint256 _threshold) internal {
         approvalThreshold = _threshold;
+
+        emit ThresholdChanged(_motionId, _threshold);
     }
 
     function _voteMotion(uint256 _motionId) internal {
         votes[_motionId][msg.sender] = true;
         motions[_motionId].voteCount++;
 
+        emit Vote(_motionId, msg.sender, true);
+
         if (motions[_motionId].voteCount >= approvalThreshold) {
             motions[_motionId].active = false;
 
             // Note: Solidity doesn't have switch statements
             if (motions[_motionId].motionType == MotionType.TRANSFER) {
-                _transfer(motions[_motionId].tokenId, motions[_motionId].transferAmount, motions[_motionId].to);
+                _transfer(_motionId, motions[_motionId].tokenId, motions[_motionId].transferAmount, motions[_motionId].to);
             } else if (motions[_motionId].motionType == MotionType.ADD_MEMBER) {
-                _addMember(motions[_motionId].to);
+                _addMember(_motionId, motions[_motionId].to);
             } else if (motions[_motionId].motionType == MotionType.REMOVE_MEMBER) {
-                _removeMember(motions[_motionId].to);
+                _removeMember(_motionId, motions[_motionId].to);
             } else if (motions[_motionId].motionType == MotionType.CHANGE_THRESHOLD) {
-                _changeThreshold(motions[_motionId].threshold);
+                _changeThreshold(_motionId, motions[_motionId].threshold);
             }
         }
     }
@@ -133,6 +193,8 @@ contract JointAccount {
         require(votes[_motionId][msg.sender], "JointAccount: you have not voted on this motion");
         votes[_motionId][msg.sender] = false;
         motions[_motionId].voteCount--;
+
+        emit Vote(_motionId, msg.sender, false);
     }
 
     function cancelMotion(uint256 _motionId) internal {
@@ -140,6 +202,8 @@ contract JointAccount {
         require(motions[_motionId].active, "JointAccount: motion is not active");
         require(motions[_motionId].proposer == msg.sender, "JointAccount: you are not the proposer of this motion");
         motions[_motionId].active = false;
+
+        emit MotionCancelled(_motionId);
     }
 
 }

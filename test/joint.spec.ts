@@ -241,5 +241,16 @@ describe('test JointAccount', function () {
                 } // Transfer is executed
             ]);
         });
+
+        it('fails to create a transfer motion without enough funds', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 2], responseLatency: 1});
+
+            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await waitForContractReceive(testTokenId);
+
+            expect(
+                contract.call('createTransferMotion', [testTokenId, '1000001', charlie.address], {caller: alice})
+            ).to.eventually.be.rejectedWith('revert');
+        });
     })
 });

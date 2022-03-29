@@ -252,5 +252,31 @@ describe('test JointAccount', function () {
                 contract.call('createTransferMotion', [testTokenId, '1000001', charlie.address], {caller: alice})
             ).to.eventually.be.rejectedWith('revert');
         });
+
+        it('fails to execute a transfer motion due to not having enough funds', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 2], responseLatency: 1});
+
+            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await waitForContractReceive(testTokenId);
+
+            // First motion. Since there are enough funds, it can be created
+            await contract.call('createTransferMotion', [testTokenId, '1000000', charlie.address], {caller: alice});
+
+            // Second motion. Again this one can be created
+            await contract.call('createTransferMotion', [testTokenId, '1000000', charlie.address], {caller: alice});
+
+            // First motion is approved, contract balance is now 0
+            await contract.call('voteMotion', ['0'], {caller: bob});
+            await charlie.receiveAll();
+            expect(await contract.balance(testTokenId)).to.be.deep.equal('0');
+
+            expect(await contract.query('voteCount', [1])).to.be.deep.equal(['1']);
+
+            // Second motion is voted, fails
+            expect(
+                contract.call('voteMotion', [1], {caller: bob})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+    })
     })
 });

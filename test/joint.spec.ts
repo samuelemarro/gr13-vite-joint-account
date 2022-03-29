@@ -278,5 +278,135 @@ describe('test JointAccount', function () {
             ).to.eventually.be.rejectedWith('revert');
         });
     })
+
+    describe('cancel vote', function() {
+        it('cancels a vote', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 2], responseLatency: 1});
+
+            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await waitForContractReceive(testTokenId);
+
+            // Alice votes yes as part of the motion creation process
+            await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
+
+            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['0']);
+
+            // Alice cancels the vote
+            await contract.call('cancelVote', ['0'], {caller: alice});
+
+            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['0']);
+            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['0']);
+            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['0']);
+
+            // Bob votes yes
+            await contract.call('voteMotion', ['0'], {caller: bob});
+
+            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['0']);
+            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['1']);
+
+            // Alice votes yes
+            await contract.call('voteMotion', ['0'], {caller: alice});
+
+            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['2']);
+            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['1']);
+
+            await charlie.receiveAll();
+            
+            // Motion was approved
+            expect(await charlie.balance(testTokenId)).to.be.deep.equal('50');
+
+            const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
+            checkEvents(events, [
+                {
+                    '0': '0', motionId: '0',
+                    '1': '0', motionType: '0',
+                    '2': alice.address, proposer: alice.address,
+                    '3': testTokenId, tokenId: testTokenId,
+                    '4': '50', transferAmount: '50',
+                    '5': charlie.address, to: charlie.address,
+                    '6': NULL, threshold: NULL
+                }, // Motion created
+                {
+                    '0': '0', motionId: '0',
+                    '1': alice.address, voter: alice.address,
+                    '2': '1', vote: '1'
+                }, // Alice votes yes
+                {
+                    '0': '0', motionId: '0',
+                    '1': alice.address, voter: alice.address,
+                    '2': '0', vote: '0'
+                }, // Alice votes no
+                {
+                    '0': '0', motionId: '0',
+                    '1': bob.address, voter: bob.address,
+                    '2': '1', vote: '1'
+                }, // Bob votes yes
+                {
+                    '0': '0', motionId: '0',
+                    '1': alice.address, voter: alice.address,
+                    '2': '1', vote: '1'
+                }, // Alice votes yes
+                {
+                    '0': '0', motionId: '0',
+                    '1': testFullId(), tokenId: testFullId(),
+                    '2': charlie.address, to: charlie.address,
+                    '3': '50', amount: '50'
+                } // Transfer is executed
+            ]);
+        });
+
+        it('fails to cancel a vote twice (as proposer)', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 2], responseLatency: 1});
+
+            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await waitForContractReceive(testTokenId);
+
+            await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
+            await charlie.receiveAll();
+
+            await contract.call('cancelVote', [0], {caller: alice});
+
+            expect(
+                contract.call('cancelVote', [0], {caller: alice})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+
+        it('fails to cancel a vote twice (as non-proposer)', async function() {
+            await contract.deploy({params: [[alice.address, bob.address, charlie.address], 3], responseLatency: 1});
+
+            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await waitForContractReceive(testTokenId);
+
+            await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
+            await charlie.receiveAll();
+
+            await contract.call('voteMotion', [0], {caller: bob});
+
+            await contract.call('cancelVote', [0], {caller: bob});
+
+            expect(
+                contract.call('cancelVote', [0], {caller: bob})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+
+        it('fails to cancel a vote without voting', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 2], responseLatency: 1});
+
+            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await waitForContractReceive(testTokenId);
+
+            await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
+            await charlie.receiveAll();
+
+            expect(
+                contract.call('cancelVote', [0], {caller: bob})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+    })
+
     })
 });

@@ -79,62 +79,100 @@ contract JointAccount {
 
     // ===Getters===
 
+    /// @notice Returns the current members
     function getMembers() external view returns (address[] memory) {
         return members;
     }
 
+    /// @notice Returns true if the given address is a member
+    ///
+    /// @param _member The queried address
     function isMember(address _member) public view returns (bool) {
         return _findMember(_member) != NULL;
     }
 
+    /// @notice Returns the number of members
     function memberCount() external view returns (uint256) {
         return members.length;
     }
 
+    /// @notice Returns true if a motion exists
+    ///
+    /// @param _motionId The queried motion id
     function exists(uint256 _motionId) public view returns (bool) {
         return _motionId < motions.length;
     }
 
+    /// @notice Returns the type of a motion
+    ///
+    /// @param _motionId The queried motion id
+    ///
+    /// @return 0 = Transfer, 1 = Add Member, 2 = Remove Member, 3 = Change Threshold
     function motionType(uint256 _motionId) external view returns (uint256) {
         require(exists(_motionId), "JointAccount: motion does not exist");
         return uint256(motions[_motionId].motionType);
     }
 
+    /// @notice Returns the token id of a motion
+    ///
+    /// @param _motionId The queried motion id
     function tokenId(uint256 _motionId) external view returns (vitetoken) {
         require(exists(_motionId), "JointAccount: motion does not exist");
         return motions[_motionId].tokenId;
     }
 
+    /// @notice Returns the transfer amount of a motion
+    ///
+    /// @param _motionId The queried motion id
     function transferAmount(uint256 _motionId) external view returns (uint256) {
         require(exists(_motionId), "JointAccount: motion does not exist");
         return motions[_motionId].transferAmount;
     }
 
+    /// @notice Returns the relevant address of a motion
+    ///
+    /// @param _motionId The queried motion id
     function to(uint256 _motionId) external view returns (address) {
         require(exists(_motionId), "JointAccount: motion does not exist");
         return motions[_motionId].to;
     }
 
+    /// @notice Returns the proposed threshold of a motion
+    ///
+    /// @param _motionId The queried motion id
     function threshold(uint256 _motionId) external view returns (uint256) {
         require(exists(_motionId), "JointAccount: motion does not exist");
         return motions[_motionId].threshold;
     }
 
+    /// @notice Returns the proposer of a motion
+    ///
+    /// @param _motionId The queried motion id
     function proposer(uint256 _motionId) external view returns (address) {
         require(exists(_motionId), "JointAccount: motion does not exist");
         return motions[_motionId].proposer;
     }
 
+    /// @notice Returns the number of votes for a motion
+    ///
+    /// @param _motionId The queried motion id
     function voteCount(uint256 _motionId) external view returns (uint256) {
         require(exists(_motionId), "JointAccount: motion does not exist");
         return motions[_motionId].voteCount;
     }
 
+    /// @notice Returns the number of votes for a motion
+    ///
+    /// @param _motionId The queried motion id
     function active(uint256 _motionId) external view returns (bool) {
         require(exists(_motionId), "JointAccount: motion does not exist");
         return motions[_motionId].active;
     }
 
+    /// @notice Returns true if a member voted for a motion
+    ///
+    /// @param _motionId The queried motion id
+    /// @param _voter The queried member
     function voted(uint256 _motionId, address _voter) external view returns (bool) {
         require(exists(_motionId), "JointAccount: motion does not exist");
         return votes[_motionId][_voter];
@@ -142,6 +180,11 @@ contract JointAccount {
 
     // ===Motion Creation===
 
+    /// @notice Creates a new transfer motion
+    ///
+    /// @param _tokenId The token id of the transfer
+    /// @param _transferAmount The amount to transfer
+    /// @param _to The address to transfer to
     function createTransferMotion(vitetoken _tokenId, uint256 _transferAmount, address _to) external {
         require(isMember(msg.sender), "JointAccount: not a member");
         motions.push(Motion(MotionType.TRANSFER, _tokenId, _transferAmount, _to, NULL, msg.sender, 0, true));
@@ -150,6 +193,9 @@ contract JointAccount {
         _voteMotion(motions.length - 1);
     }
 
+    /// @notice Creates a new add member motion
+    ///
+    /// @param _member The address to add
     function createAddMemberMotion(address _member) external {
         require(isMember(msg.sender), "JointAccount: not a member");
         require(!isMember(_member), "JointAccount: address is already a member");
@@ -159,6 +205,9 @@ contract JointAccount {
         _voteMotion(motions.length - 1);
     }
 
+    /// @notice Creates a new remove member motion
+    ///
+    /// @param _member The address to remove
     function createRemoveMemberMotion(address _member) external {
         require(isMember(msg.sender), "JointAccount: not a member");
         require(isMember(_member), "JointAccount: address is not a member");
@@ -170,6 +219,9 @@ contract JointAccount {
         _voteMotion(motions.length - 1);
     }
 
+    /// @notice Creates a new change threshold motion
+    ///
+    /// @param _threshold The new threshold
     function createChangeThresholdMotion(uint256 _threshold) external {
         require(isMember(msg.sender), "JointAccount: not a member");
         require(_threshold <= members.length, "JointAccount: threshold too high");
@@ -255,6 +307,11 @@ contract JointAccount {
         }
     }
 
+    // ===Motion Voting===
+
+    /// @notice Votes on a motion
+    ///
+    /// @param _motionId The id of the motion to vote on
     function voteMotion(uint256 _motionId) external {
         require(isMember(msg.sender), "JointAccount: not a member");
         require(motions[_motionId].active, "JointAccount: motion is not active");
@@ -262,6 +319,9 @@ contract JointAccount {
         _voteMotion(_motionId);
     }
 
+    /// @notice Cancels a vote on a motion
+    ///
+    /// @param _motionId The id of the motion to cancel the vote on
     function cancelVote(uint256 _motionId) external {
         require(isMember(msg.sender), "JointAccount: not a member");
         require(motions[_motionId].active, "JointAccount: motion is not active");
@@ -272,6 +332,9 @@ contract JointAccount {
         emit Vote(_motionId, msg.sender, false);
     }
 
+    /// @notice Cancels a motion
+    ///
+    /// @param _motionId The id of the motion to cancel
     function cancelMotion(uint256 _motionId) external {
         require(isMember(msg.sender), "JointAccount: not a member");
         require(motions[_motionId].active, "JointAccount: motion is not active");

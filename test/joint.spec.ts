@@ -22,6 +22,8 @@ const viteId = 'tti_5649544520544f4b454e6e40';
 const viteFullId = '000000000000000000000000000000000000000000005649544520544f4b454e';
 
 const NULL = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+const NULL_ADDRESS = 'foo';//'tti_000000000000000000004cfd';
+const NULL_TOKEN = 'tti_000000000000000000004cfd';
 
 const toFull = (id : string) => {
     const replacedId = id.replace('tti_', '00000000000000000000000000000000000000000000');
@@ -278,6 +280,145 @@ describe('test JointAccount', function () {
         });
     })
 
+    describe('add member motion', function() {
+        it('creates and votes an add member motion', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 2], responseLatency: 1});
+            expect(contract.address).to.be.a('string');
+
+            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await waitForContractReceive(testTokenId);
+
+            await contract.call('createAddMemberMotion', [charlie.address], {caller: alice});
+
+            expect(await contract.query('exists', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('motionType', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('tokenId', [0])).to.be.deep.equal([NULL_TOKEN]);
+            expect(await contract.query('transferAmount', [0])).to.be.deep.equal([NULL]);
+            expect(await contract.query('to', [0])).to.be.deep.equal([charlie.address]);
+            expect(await contract.query('threshold', [0])).to.be.deep.equal([NULL]);
+            expect(await contract.query('proposer', [0])).to.be.deep.equal([alice.address]);
+            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('active', [0])).to.be.deep.equal(['1']);
+
+            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['0']);
+
+            // Motion hasn't been approved yet
+            expect(await contract.query('memberCount', [])).to.be.deep.equal(['2']);
+            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['0']);
+
+            await contract.call('voteMotion', ['0'], {caller: bob});
+
+            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['2']);
+            expect(await contract.query('active', [0])).to.be.deep.equal(['0']);
+
+            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['1']);
+
+            // Motion was approved
+            expect(await contract.query('memberCount', [])).to.be.deep.equal(['3']);
+            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['1']);
+
+            const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
+            checkEvents(events, [
+                {
+                    '0': '0', motionId: '0',
+                    '1': '1', motionType: '1',
+                    '2': alice.address, proposer: alice.address,
+                    '3': NULL_TOKEN, tokenId: NULL_TOKEN,
+                    '4': NULL, transferAmount: NULL,
+                    '5': charlie.address, to: charlie.address,
+                    '6': NULL, threshold: NULL
+                }, // Motion created
+                {
+                    '0': '0', motionId: '0',
+                    '1': alice.address, voter: alice.address,
+                    '2': '1', vote: '1'
+                }, // Alice votes yes
+                {
+                    '0': '0', motionId: '0',
+                    '1': bob.address, voter: bob.address,
+                    '2': '1', vote: '1'
+                }, // Bob votes yes
+                {
+                    '0': '0', motionId: '0',
+                    '1': charlie.address, member: charlie.address
+                } // Charlie is added
+            ]);
+        });
+
+        it('creates and immediately approves an add member motion', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 1], responseLatency: 1});
+
+            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await waitForContractReceive(testTokenId);
+
+            await contract.call('createAddMemberMotion', [charlie.address], {caller: alice});
+
+            // Motion was approved
+            expect(await contract.query('memberCount', [])).to.be.deep.equal(['3']);
+            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['1']);
+
+            const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
+            checkEvents(events, [
+                {
+                    '0': '0', motionId: '0',
+                    '1': '1', motionType: '1',
+                    '2': alice.address, proposer: alice.address,
+                    '3': NULL_TOKEN, tokenId: NULL_TOKEN,
+                    '4': NULL, transferAmount: NULL,
+                    '5': charlie.address, to: charlie.address,
+                    '6': NULL, threshold: NULL
+                }, // Motion created
+                {
+                    '0': '0', motionId: '0',
+                    '1': alice.address, voter: alice.address,
+                    '2': '1', vote: '1'
+                }, // Alice votes yes
+                {
+                    '0': '0', motionId: '0',
+                    '1': charlie.address, member: charlie.address
+                } // Charlie is added
+            ]);
+        });
+
+        it('fails to create an add member motion of a member', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 2], responseLatency: 1});
+
+            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await waitForContractReceive(testTokenId);
+
+            expect(
+                contract.call('createAddMemberMotion', [bob.address], {caller: alice})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+
+        it('fails to execute a transfer motion due to not having enough funds', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 2], responseLatency: 1});
+
+            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await waitForContractReceive(testTokenId);
+
+            // First motion. Since Charlie is not a member, it can be created
+            await contract.call('createAddMemberMotion', [charlie.address], {caller: alice});
+
+            // Second motion. Again this one can be created
+            await contract.call('createAddMemberMotion', [charlie.address], {caller: alice})
+
+            // First motion is approved, Charlie is now a member
+            await contract.call('voteMotion', ['0'], {caller: bob});
+            expect(await contract.query('memberCount', [])).to.be.deep.equal(['3']);
+            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['1']);
+
+            expect(await contract.query('voteCount', [1])).to.be.deep.equal(['1']);
+
+            // Second motion is voted, fails
+            expect(
+                contract.call('voteMotion', [1], {caller: bob})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+    })
+
     describe('cancel vote', function() {
         it('cancels a vote', async function() {
             await contract.deploy({params: [[alice.address, bob.address], 2], responseLatency: 1});
@@ -324,8 +465,8 @@ describe('test JointAccount', function () {
                     '0': '0', motionId: '0',
                     '1': '0', motionType: '0',
                     '2': alice.address, proposer: alice.address,
-                    '3': testTokenId, tokenId: testTokenId,
-                    '4': '50', transferAmount: '50',
+                    '3': NULL_TOKEN, tokenId: NULL_TOKEN,
+                    '4': NULL, transferAmount: NULL,
                     '5': charlie.address, to: charlie.address,
                     '6': NULL, threshold: NULL
                 }, // Motion created

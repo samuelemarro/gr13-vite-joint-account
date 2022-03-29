@@ -382,11 +382,16 @@ describe('test JointAccount', function () {
             ]);
         });
 
+        it('fails to create an add member motion for a static contract', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 2, 1], responseLatency: 1});
+
+            expect(
+                contract.call('createAddMemberMotion', [charlie.address], {caller: alice})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+
         it('fails to create an add member motion of a member', async function() {
             await contract.deploy({params: [[alice.address, bob.address], 2, 0], responseLatency: 1});
-
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
-            await waitForContractReceive(testTokenId);
 
             expect(
                 contract.call('createAddMemberMotion', [bob.address], {caller: alice})
@@ -395,9 +400,6 @@ describe('test JointAccount', function () {
 
         it('fails to execute an add member motion due to Charlie already being a member', async function() {
             await contract.deploy({params: [[alice.address, bob.address], 2, 0], responseLatency: 1});
-
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
-            await waitForContractReceive(testTokenId);
 
             // First motion. Since Charlie is not a member, it can be created
             await contract.call('createAddMemberMotion', [charlie.address], {caller: alice});

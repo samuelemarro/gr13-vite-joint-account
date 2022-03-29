@@ -64,17 +64,19 @@ contract JointAccount {
     }
     address[] members;
     uint256 public approvalThreshold;
+    bool isStatic;
 
     Motion[] motions;
     mapping(uint256 => mapping(address => bool)) votes;
 
-    constructor(address[] memory _members, uint256 _approvalThreshold) {
+    constructor(address[] memory _members, uint256 _approvalThreshold, bool _isStatic) {
         require(_members.length > 0, "JointAccount: at least one member must be specified");
         require(_approvalThreshold > 0, "JointAccount: approval threshold must be greater than 0");
         require(_approvalThreshold <= _members.length, "JointAccount: approval threshold must be less than or equal to the number of members");
 
         members = _members;
         approvalThreshold = _approvalThreshold;
+        isStatic = _isStatic;
     }
 
     // ===Getters===
@@ -197,6 +199,7 @@ contract JointAccount {
     ///
     /// @param _member The address to add
     function createAddMemberMotion(address _member) external {
+        require(!isStatic, "JointAccount: cannot add members to a static account");
         require(isMember(msg.sender), "JointAccount: not a member");
         require(!isMember(_member), "JointAccount: address is already a member");
         motions.push(Motion(MotionType.ADD_MEMBER, NULL_TOKEN, NULL, _member, NULL, msg.sender, 0, true));
@@ -209,6 +212,7 @@ contract JointAccount {
     ///
     /// @param _member The address to remove
     function createRemoveMemberMotion(address _member) external {
+        require(!isStatic, "JointAccount: cannot remove members from a static account");
         require(isMember(msg.sender), "JointAccount: not a member");
         require(isMember(_member), "JointAccount: address is not a member");
         require(approvalThreshold < members.length, "JointAccount: removing would make the threshold impossible to reach");
@@ -223,6 +227,7 @@ contract JointAccount {
     ///
     /// @param _threshold The new threshold
     function createChangeThresholdMotion(uint256 _threshold) external {
+        require(!isStatic, "JointAccount: cannot change the threshold of a static account");
         require(isMember(msg.sender), "JointAccount: not a member");
         require(_threshold <= members.length, "JointAccount: threshold too high");
 

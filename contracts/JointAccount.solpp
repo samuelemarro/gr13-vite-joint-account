@@ -92,7 +92,7 @@ contract JointAccount {
     }
 
     function exists(uint256 _motionId) public view returns (bool) {
-        return _motionId < motions.length && motions[_motionId].active;
+        return _motionId < motions.length;
     }
 
     function motionType(uint256 _motionId) external view returns (uint256) {

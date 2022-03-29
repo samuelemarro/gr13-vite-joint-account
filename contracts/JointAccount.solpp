@@ -63,7 +63,7 @@ contract JointAccount {
         bool active;
     }
     address[] members;
-    uint256 approvalThreshold;
+    uint256 public approvalThreshold;
 
     Motion[] motions;
     mapping(uint256 => mapping(address => bool)) votes;
@@ -76,6 +76,67 @@ contract JointAccount {
         members = _members;
         approvalThreshold = _approvalThreshold;
     }
+
+    // ===Getters===
+
+    function getMembers() external view returns (address[] memory) {
+        return members;
+    }
+
+    function memberCount() external view returns (uint256) {
+        return members.length;
+    }
+
+    function exists(uint256 _motionId) public view returns (bool) {
+        return _motionId < motions.length && motions[_motionId].active;
+    }
+
+    function motionType(uint256 _motionId) external view returns (uint256) {
+        require(exists(_motionId), "JointAccount: motion does not exist");
+        return uint256(motions[_motionId].motionType);
+    }
+
+    function tokenId(uint256 _motionId) external view returns (vitetoken) {
+        require(exists(_motionId), "JointAccount: motion does not exist");
+        return motions[_motionId].tokenId;
+    }
+
+    function transferAmount(uint256 _motionId) external view returns (uint256) {
+        require(exists(_motionId), "JointAccount: motion does not exist");
+        return motions[_motionId].transferAmount;
+    }
+
+    function to(uint256 _motionId) external view returns (address) {
+        require(exists(_motionId), "JointAccount: motion does not exist");
+        return motions[_motionId].to;
+    }
+
+    function threshold(uint256 _motionId) external view returns (uint256) {
+        require(exists(_motionId), "JointAccount: motion does not exist");
+        return motions[_motionId].threshold;
+    }
+
+    function proposer(uint256 _motionId) external view returns (address) {
+        require(exists(_motionId), "JointAccount: motion does not exist");
+        return motions[_motionId].proposer;
+    }
+
+    function voteCount(uint256 _motionId) external view returns (uint256) {
+        require(exists(_motionId), "JointAccount: motion does not exist");
+        return motions[_motionId].voteCount;
+    }
+
+    function active(uint256 _motionId) external view returns (bool) {
+        require(exists(_motionId), "JointAccount: motion does not exist");
+        return motions[_motionId].active;
+    }
+
+    function voted(uint256 _motionId, address _voter) external view returns (bool) {
+        require(exists(_motionId), "JointAccount: motion does not exist");
+        return votes[_motionId][_voter];
+    }
+
+    // ===Motion Creation===
 
     function createTransferMotion(vitetoken _tokenId, uint256 _transferAmount, address _to) external {
         require(_findMember(msg.sender) != NULL, "JointAccount: not a member");

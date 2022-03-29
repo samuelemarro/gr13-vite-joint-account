@@ -408,5 +408,58 @@ describe('test JointAccount', function () {
         });
     })
 
+
+    describe('motion checks', function() {
+        it('fails to vote on a non-existent motion', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 2], responseLatency: 1});
+
+            expect(
+                contract.call('voteMotion', [0], {caller: bob})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+
+        it('fails to vote twice (as proposer)', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 2], responseLatency: 1});
+
+            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await waitForContractReceive(testTokenId);
+
+            await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
+            await charlie.receiveAll();
+
+            expect(
+                contract.call('voteMotion', [0], {caller: alice})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+
+        it('fails to vote twice (as non-proposer)', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 2], responseLatency: 1});
+
+            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await waitForContractReceive(testTokenId);
+
+            await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
+            await charlie.receiveAll();
+
+            await contract.call('voteMotion', [0], {caller: bob})
+
+            expect(
+                contract.call('voteMotion', [0], {caller: bob})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+
+        it('fails to vote an inactive motion', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 1], responseLatency: 1});
+
+            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await waitForContractReceive(testTokenId);
+
+            await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
+            await charlie.receiveAll();
+
+            expect(
+                contract.call('voteMotion', [0], {caller: bob})
+            ).to.eventually.be.rejectedWith('revert');
+        });
     })
 });

@@ -150,7 +150,7 @@ contract JointAccount {
         _voteMotion(motions.length - 1);
     }
 
-    function createAddMotion(address _member) external {
+    function createAddMemberMotion(address _member) external {
         require(isMember(msg.sender), "JointAccount: not a member");
         motions.push(Motion(MotionType.ADD_MEMBER, NULL_TOKEN, NULL, _member, NULL, msg.sender, 0, true));
 
@@ -158,7 +158,7 @@ contract JointAccount {
         _voteMotion(motions.length - 1);
     }
 
-    function createRemoveMotion(address _member) external {
+    function createRemoveMemberMotion(address _member) external {
         require(isMember(msg.sender), "JointAccount: not a member");
         motions.push(Motion(MotionType.REMOVE_MEMBER, NULL_TOKEN, NULL, _member, NULL, msg.sender, 0, true));
 
@@ -270,5 +270,4 @@ contract JointAccount {
 
         emit MotionCancelled(_motionId);
     }
-
 }

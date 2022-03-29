@@ -201,7 +201,44 @@ describe('test JointAccount', function () {
                     '1': testFullId(), tokenId: testFullId(),
                     '2': charlie.address, to: charlie.address,
                     '3': '50', amount: '50'
-                }, // Transfer is executed
+                } // Transfer is executed
+            ]);
+        });
+
+        it('creates and immediately approves a transfer motion', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 1], responseLatency: 1});
+
+            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await waitForContractReceive(testTokenId);
+
+            await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
+            await charlie.receiveAll();
+
+            // Motion was approved
+            expect(await charlie.balance(testTokenId)).to.be.deep.equal('50');
+
+            const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
+            checkEvents(events, [
+                {
+                    '0': '0', motionId: '0',
+                    '1': '0', motionType: '0',
+                    '2': alice.address, proposer: alice.address,
+                    '3': testTokenId, tokenId: testTokenId,
+                    '4': '50', transferAmount: '50',
+                    '5': charlie.address, to: charlie.address,
+                    '6': NULL, threshold: NULL
+                }, // Motion created
+                {
+                    '0': '0', motionId: '0',
+                    '1': alice.address, voter: alice.address,
+                    '2': '1', vote: '1'
+                }, // Alice votes yes
+                {
+                    '0': '0', motionId: '0',
+                    '1': testFullId(), tokenId: testFullId(),
+                    '2': charlie.address, to: charlie.address,
+                    '3': '50', amount: '50'
+                } // Transfer is executed
             ]);
         });
     })

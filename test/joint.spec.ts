@@ -465,8 +465,8 @@ describe('test JointAccount', function () {
                     '0': '0', motionId: '0',
                     '1': '0', motionType: '0',
                     '2': alice.address, proposer: alice.address,
-                    '3': NULL_TOKEN, tokenId: NULL_TOKEN,
-                    '4': NULL, transferAmount: NULL,
+                    '3': testTokenId, tokenId: testTokenId,
+                    '4': '50', transferAmount: '50',
                     '5': charlie.address, to: charlie.address,
                     '6': NULL, threshold: NULL
                 }, // Motion created

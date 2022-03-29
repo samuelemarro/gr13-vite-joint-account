@@ -241,14 +241,14 @@ contract JointAccount {
         }
     }
 
-    function voteMotion(uint256 _motionId) internal {
+    function voteMotion(uint256 _motionId) external {
         require(_findMember(msg.sender) != NULL, "JointAccount: not a member");
         require(motions[_motionId].active, "JointAccount: motion is not active");
         require(!votes[_motionId][msg.sender], "JointAccount: you have already voted on this motion");
         _voteMotion(_motionId);
     }
 
-    function cancelVote(uint256 _motionId) internal {
+    function cancelVote(uint256 _motionId) external {
         require(_findMember(msg.sender) != NULL, "JointAccount: not a member");
         require(motions[_motionId].active, "JointAccount: motion is not active");
         require(votes[_motionId][msg.sender], "JointAccount: you have not voted on this motion");
@@ -258,7 +258,7 @@ contract JointAccount {
         emit Vote(_motionId, msg.sender, false);
     }
 
-    function cancelMotion(uint256 _motionId) internal {
+    function cancelMotion(uint256 _motionId) external {
         require(_findMember(msg.sender) != NULL, "JointAccount: not a member");
         require(motions[_motionId].active, "JointAccount: motion is not active");
         require(motions[_motionId].proposer == msg.sender, "JointAccount: you are not the proposer of this motion");

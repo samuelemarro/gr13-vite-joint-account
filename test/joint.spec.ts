@@ -421,6 +421,141 @@ describe('test JointAccount', function () {
         });
     })
 
+    describe('remove member motion', function() {
+        it('creates and votes a remove member motion', async function() {
+            await contract.deploy({params: [[alice.address, bob.address, charlie.address], 2, 0], responseLatency: 1});
+            expect(contract.address).to.be.a('string');
+
+            await contract.call('createRemoveMemberMotion', [charlie.address], {caller: alice});
+
+            expect(await contract.query('exists', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('motionType', [0])).to.be.deep.equal(['2']);
+            expect(await contract.query('tokenId', [0])).to.be.deep.equal([NULL_TOKEN]);
+            expect(await contract.query('transferAmount', [0])).to.be.deep.equal([NULL]);
+            expect(await contract.query('to', [0])).to.be.deep.equal([charlie.address]);
+            expect(await contract.query('threshold', [0])).to.be.deep.equal([NULL]);
+            expect(await contract.query('proposer', [0])).to.be.deep.equal([alice.address]);
+            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('active', [0])).to.be.deep.equal(['1']);
+
+            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['0']);
+
+            // Motion hasn't been approved yet
+            expect(await contract.query('memberCount', [])).to.be.deep.equal(['3']);
+            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['1']);
+
+            await contract.call('voteMotion', ['0'], {caller: bob});
+
+            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['2']);
+            expect(await contract.query('active', [0])).to.be.deep.equal(['0']);
+
+            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['1']);
+
+            // Motion was approved
+            expect(await contract.query('memberCount', [])).to.be.deep.equal(['2']);
+            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['0']);
+
+            const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
+            checkEvents(events, [
+                {
+                    '0': '0', motionId: '0',
+                    '1': '2', motionType: '2',
+                    '2': alice.address, proposer: alice.address,
+                    '3': NULL_TOKEN, tokenId: NULL_TOKEN,
+                    '4': NULL, transferAmount: NULL,
+                    '5': charlie.address, to: charlie.address,
+                    '6': NULL, threshold: NULL
+                }, // Motion created
+                {
+                    '0': '0', motionId: '0',
+                    '1': alice.address, voter: alice.address,
+                    '2': '1', vote: '1'
+                }, // Alice votes yes
+                {
+                    '0': '0', motionId: '0',
+                    '1': bob.address, voter: bob.address,
+                    '2': '1', vote: '1'
+                }, // Bob votes yes
+                {
+                    '0': '0', motionId: '0',
+                    '1': charlie.address, member: charlie.address
+                } // Charlie is removed
+            ]);
+        });
+
+        it('creates and immediately approves a remove member motion', async function() {
+            await contract.deploy({params: [[alice.address, bob.address, charlie.address], 1, 0], responseLatency: 1});
+
+            await contract.call('createRemoveMemberMotion', [charlie.address], {caller: alice});
+
+            // Motion was approved
+            expect(await contract.query('memberCount', [])).to.be.deep.equal(['2']);
+            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['0']);
+
+            const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
+            checkEvents(events, [
+                {
+                    '0': '0', motionId: '0',
+                    '1': '2', motionType: '2',
+                    '2': alice.address, proposer: alice.address,
+                    '3': NULL_TOKEN, tokenId: NULL_TOKEN,
+                    '4': NULL, transferAmount: NULL,
+                    '5': charlie.address, to: charlie.address,
+                    '6': NULL, threshold: NULL
+                }, // Motion created
+                {
+                    '0': '0', motionId: '0',
+                    '1': alice.address, voter: alice.address,
+                    '2': '1', vote: '1'
+                }, // Alice votes yes
+                {
+                    '0': '0', motionId: '0',
+                    '1': charlie.address, member: charlie.address
+                } // Charlie is removed
+            ]);
+        });
+
+        it('fails to create a remove member motion for a static contract', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 2, 1], responseLatency: 1});
+
+            expect(
+                contract.call('createAddMemberMotion', [charlie.address], {caller: alice})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+
+        it('fails to create a remove member motion of a non-member', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 1, 0], responseLatency: 1});
+
+            expect(
+                contract.call('createRemoveMemberMotion', [charlie.address], {caller: alice})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+
+        it('fails to execute a create member motion due to Charlie already being removed', async function() {
+            await contract.deploy({params: [[alice.address, bob.address, charlie.address], 2, 0], responseLatency: 1});
+
+            // First motion. Since Charlie is a member, it can be created
+            await contract.call('createRemoveMemberMotion', [charlie.address], {caller: alice});
+
+            // Second motion. Again this one can be created
+            await contract.call('createRemoveMemberMotion', [charlie.address], {caller: alice})
+
+            // First motion is approved, Charlie is no longer a member
+            await contract.call('voteMotion', ['0'], {caller: bob});
+            expect(await contract.query('memberCount', [])).to.be.deep.equal(['2']);
+            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['0']);
+
+            expect(await contract.query('voteCount', [1])).to.be.deep.equal(['1']);
+
+            // Second motion is voted, fails
+            expect(
+                contract.call('voteMotion', [1], {caller: bob})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+    })
+
     describe('cancel vote', function() {
         it('cancels a vote', async function() {
             await contract.deploy({params: [[alice.address, bob.address], 2, 1], responseLatency: 1});

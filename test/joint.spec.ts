@@ -22,7 +22,7 @@ const viteId = 'tti_5649544520544f4b454e6e40';
 const viteFullId = '000000000000000000000000000000000000000000005649544520544f4b454e';
 
 const NULL = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
-const NULL_ADDRESS = 'foo';//'tti_000000000000000000004cfd';
+const NULL_ADDRESS = 'vite_0000000000000000000000000000000000000000a4f3a0cb58';
 const NULL_TOKEN = 'tti_000000000000000000004cfd';
 
 const toFull = (id : string) => {
@@ -118,7 +118,7 @@ describe('test JointAccount', function () {
         contract.setDeployer(deployer).setProvider(provider);
     });
     describe('account creation', function() {
-        it.only('creates an account', async function() {
+        it('creates an account', async function() {
             await contract.deploy({params: [[alice.address, bob.address], 1, 1], responseLatency: 1});
             expect(contract.address).to.be.a('string');
 
@@ -284,9 +284,6 @@ describe('test JointAccount', function () {
         it('creates and votes an add member motion', async function() {
             await contract.deploy({params: [[alice.address, bob.address], 2, 0], responseLatency: 1});
             expect(contract.address).to.be.a('string');
-
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
-            await waitForContractReceive(testTokenId);
 
             await contract.call('createAddMemberMotion', [charlie.address], {caller: alice});
 
@@ -533,7 +530,7 @@ describe('test JointAccount', function () {
             ).to.eventually.be.rejectedWith('revert');
         });
 
-        it('fails to execute a create member motion due to Charlie already being removed', async function() {
+        it('fails to execute a remove member motion due to Charlie already being removed', async function() {
             await contract.deploy({params: [[alice.address, bob.address, charlie.address], 2, 0], responseLatency: 1});
 
             // First motion. Since Charlie is a member, it can be created

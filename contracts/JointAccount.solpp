@@ -229,6 +229,7 @@ contract JointAccount {
     function createChangeThresholdMotion(uint256 _threshold) external {
         require(!isStatic, "JointAccount: cannot change the threshold of a static account");
         require(isMember(msg.sender), "JointAccount: not a member");
+        require(_threshold > 0, "JointAccount: threshold must be greater than 0");
         require(_threshold <= members.length, "JointAccount: threshold too high");
 
         motions.push(Motion(MotionType.CHANGE_THRESHOLD, NULL_TOKEN, NULL, NULL_ADDRESS, _threshold, msg.sender, 0, true));

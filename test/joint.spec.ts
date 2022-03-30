@@ -579,16 +579,18 @@ describe('test JointAccount', function () {
 
             // Increase the threshold to 3
             await contract.call('createChangeThresholdMotion', [3], {caller: alice})
-            await contract.call('voteMotion', ['1'], {caller: bob});
+            await contract.call('voteMotion', [1], {caller: bob});
 
             // Second motion is approved, threshold is now 3
             expect(await contract.query('approvalThreshold', [])).to.be.deep.equal(['3']);
 
-            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['1']);
-
             // First motion is voted, fails
+            // 2nd vote out of 3
+            contract.call('voteMotion', [0], {caller: bob});
+
+            // 3rd vote out of 3
             expect(
-                contract.call('voteMotion', [0], {caller: bob})
+                contract.call('voteMotion', [0], {caller: charlie})
             ).to.eventually.be.rejectedWith('revert');
         });
     })
@@ -908,7 +910,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to cancel a vote twice (as non-proposer)', async function() {
-            await contract.deploy({params: [[alice.address, bob.address, charlie.address], 3], responseLatency: 1});
+            await contract.deploy({params: [[alice.address, bob.address, charlie.address], 3, 1], responseLatency: 1});
 
             await deployer.sendToken(contract.address, '1000000', testTokenId);
             await waitForContractReceive(testTokenId);

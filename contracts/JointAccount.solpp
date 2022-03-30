@@ -268,7 +268,7 @@ contract JointAccount {
     }
 
     function _removeMember(uint256 _motionId, address _member) internal {
-        require(motions[_motionId].threshold < members.length, "JointAccount: removing would make the threshold impossible to reach");
+        require(approvalThreshold < members.length, "JointAccount: removing would make the threshold impossible to reach");
 
         uint256 index = _findMember(_member);
         require(index != NULL, "JointAccount: address is not a member");

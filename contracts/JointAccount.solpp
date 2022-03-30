@@ -226,6 +226,8 @@ contract JointAccount {
     /// @notice Creates a new change threshold motion
     ///
     /// @param _threshold The new threshold
+    ///
+    /// @dev Note that it is possible to set the threshold to the current threshold
     function createChangeThresholdMotion(uint256 _threshold) external {
         require(!isStatic, "JointAccount: cannot change the threshold of a static account");
         require(isMember(msg.sender), "JointAccount: not a member");

@@ -10,6 +10,7 @@ This contract is my submission to GitCoin's Round 13 Hackathon "Joint Account" b
 - Create a static contract (members cannot be added or removed, threshold cannot be changed)
 - Cancel and re-vote as many times as you want
 - Cancel entire proposals
+- Getters for UIs
 
 ## Installing
 

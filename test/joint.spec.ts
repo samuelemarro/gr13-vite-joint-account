@@ -551,6 +551,27 @@ describe('test JointAccount', function () {
                 contract.call('voteMotion', [1], {caller: bob})
             ).to.eventually.be.rejectedWith('revert');
         });
+
+        it('fails to execute a remove member motion due to the approval threshold being too high', async function() {
+            await contract.deploy({params: [[alice.address, bob.address, charlie.address], 2, 0], responseLatency: 1});
+
+            // Since the threshold is 2, it can be created
+            await contract.call('createRemoveMemberMotion', [charlie.address], {caller: alice});
+
+            // Increase the threshold to 3
+            await contract.call('createChangeThresholdMotion', [3], {caller: alice})
+            await contract.call('voteMotion', ['1'], {caller: bob});
+
+            // Second motion is approved, threshold is now 3
+            expect(await contract.query('approvalThreshold', [])).to.be.deep.equal(['3']);
+
+            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['1']);
+
+            // First motion is voted, fails
+            expect(
+                contract.call('voteMotion', [0], {caller: bob})
+            ).to.eventually.be.rejectedWith('revert');
+        });
     })
 
     describe('change threshold motion', function() {

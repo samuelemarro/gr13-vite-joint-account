@@ -514,11 +514,31 @@ describe('test JointAccount', function () {
             ]);
         });
 
+        it('fails to vote after being removed', async function() {
+            await contract.deploy({params: [[alice.address, bob.address, charlie.address], 2, 0], responseLatency: 1});
+
+            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await waitForContractReceive(testTokenId);
+
+            await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice})
+
+            // Remove Charlie
+            await contract.call('createRemoveMemberMotion', [charlie.address], {caller: alice});
+            await contract.call('voteMotion', [1], {caller: bob});
+
+            expect(await contract.query('memberCount', [])).to.be.deep.equal(['2']);
+            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['0']);
+
+            expect(
+                contract.call('voteMotion', ['0'], {caller: charlie})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+
         it('fails to create a remove member motion for a static contract', async function() {
             await contract.deploy({params: [[alice.address, bob.address], 2, 1], responseLatency: 1});
 
             expect(
-                contract.call('createAddMemberMotion', [charlie.address], {caller: alice})
+                contract.call('createRemoveMemberMotion', [charlie.address], {caller: alice})
             ).to.eventually.be.rejectedWith('revert');
         });
 

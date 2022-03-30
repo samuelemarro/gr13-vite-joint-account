@@ -666,6 +666,79 @@ describe('test JointAccount', function () {
             ]);
         });
 
+        it('makes voting on a motion possible after decreasing the threshold', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 2, 0], responseLatency: 1});
+
+            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await waitForContractReceive(testTokenId);
+
+            await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
+
+            // Lower the threshold
+            await contract.call('createChangeThresholdMotion', [1], {caller: alice});
+            await contract.call('voteMotion', [1], {caller: bob});
+            expect(await contract.query('approvalThreshold', [])).to.be.deep.equal(['1']);
+
+            // Alice votes again
+            await contract.call('voteMotion', [0], {caller: alice});
+            await charlie.receiveAll();
+
+            // Motion was approved
+            expect(await charlie.balance(testTokenId)).to.be.deep.equal('50');
+
+            const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
+            checkEvents(events, [
+                {
+                    '0': '0', motionId: '0',
+                    '1': '0', motionType: '0',
+                    '2': alice.address, proposer: alice.address,
+                    '3': testTokenId, tokenId: testTokenId,
+                    '4': '50', transferAmount: '50',
+                    '5': charlie.address, to: charlie.address,
+                    '6': NULL, threshold: NULL
+                }, // Transfer motion created
+                {
+                    '0': '0', motionId: '0',
+                    '1': alice.address, voter: alice.address,
+                    '2': '1', vote: '1'
+                }, // Alice votes yes on the transfer
+                {
+                    '0': '1', motionId: '1',
+                    '1': '3', motionType: '3',
+                    '2': alice.address, proposer: alice.address,
+                    '3': NULL_TOKEN, tokenId: NULL_TOKEN,
+                    '4': NULL, transferAmount: NULL,
+                    '5': NULL_ADDRESS, to: NULL_ADDRESS,
+                    '6': '1', threshold: '1'
+                }, // Change approval threshold motion created
+                {
+                    '0': '1', motionId: '1',
+                    '1': alice.address, voter: alice.address,
+                    '2': '1', vote: '1'
+                }, // Alice votes yes on the threshold change
+                {
+                    '0': '1', motionId: '1',
+                    '1': bob.address, voter: bob.address,
+                    '2': '1', vote: '1'
+                }, // Bob votes yes on the threshold change
+                {
+                    '0': '1', motionId: '1',
+                    '1': '1', threshold: '1'
+                }, // Threshold is changed
+                {
+                    '0': '0', motionId: '0',
+                    '1': alice.address, voter: alice.address,
+                    '2': '1', vote: '1'
+                }, // Alice votes yes on the transfer again
+                {
+                    '0': '0', motionId: '0',
+                    '1': testFullId(), tokenId: testFullId(),
+                    '2': charlie.address, to: charlie.address,
+                    '3': '50', amount: '50'
+                } // Transfer is executed
+            ]);
+        });
+
         it('fails to create a change threshold motion for a static contract', async function() {
             await contract.deploy({params: [[alice.address, bob.address], 2, 1], responseLatency: 1});
 

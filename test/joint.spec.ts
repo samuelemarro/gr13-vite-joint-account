@@ -556,6 +556,151 @@ describe('test JointAccount', function () {
         });
     })
 
+    describe('change threshold motion', function() {
+        it('creates and votes a change threshold motion', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 2, 0], responseLatency: 1});
+
+            await contract.call('createChangeThresholdMotion', [1], {caller: alice});
+
+            expect(await contract.query('exists', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('motionType', [0])).to.be.deep.equal(['3']);
+            expect(await contract.query('tokenId', [0])).to.be.deep.equal([NULL_TOKEN]);
+            expect(await contract.query('transferAmount', [0])).to.be.deep.equal([NULL]);
+            expect(await contract.query('to', [0])).to.be.deep.equal([NULL_ADDRESS]);
+            expect(await contract.query('threshold', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('proposer', [0])).to.be.deep.equal([alice.address]);
+            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('active', [0])).to.be.deep.equal(['1']);
+
+            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['0']);
+
+            // Motion hasn't been approved yet
+            expect(await contract.query('approvalThreshold', [])).to.be.deep.equal(['2']);
+
+            await contract.call('voteMotion', ['0'], {caller: bob});
+
+            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['2']);
+            expect(await contract.query('active', [0])).to.be.deep.equal(['0']);
+
+            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['1']);
+
+            // Motion was approved
+            expect(await contract.query('approvalThreshold', [])).to.be.deep.equal(['1']);
+
+            const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
+            checkEvents(events, [
+                {
+                    '0': '0', motionId: '0',
+                    '1': '3', motionType: '3',
+                    '2': alice.address, proposer: alice.address,
+                    '3': NULL_TOKEN, tokenId: NULL_TOKEN,
+                    '4': NULL, transferAmount: NULL,
+                    '5': NULL_ADDRESS, to: NULL_ADDRESS,
+                    '6': '1', threshold: '1'
+                }, // Motion created
+                {
+                    '0': '0', motionId: '0',
+                    '1': alice.address, voter: alice.address,
+                    '2': '1', vote: '1'
+                }, // Alice votes yes
+                {
+                    '0': '0', motionId: '0',
+                    '1': bob.address, voter: bob.address,
+                    '2': '1', vote: '1'
+                }, // Bob votes yes
+                {
+                    '0': '0', motionId: '0',
+                    '1': '1', threshold: '1'
+                } // Threshold is changed
+            ]);
+        });
+
+        it('creates and immediately approves a change threshold motion', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 1, 0], responseLatency: 1});
+
+            await contract.call('createChangeThresholdMotion', [2], {caller: alice});
+
+            // Motion was approved
+            expect(await contract.query('approvalThreshold', [])).to.be.deep.equal(['2']);
+
+            const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
+            checkEvents(events, [
+                {
+                    '0': '0', motionId: '0',
+                    '1': '3', motionType: '3',
+                    '2': alice.address, proposer: alice.address,
+                    '3': NULL_TOKEN, tokenId: NULL_TOKEN,
+                    '4': NULL, transferAmount: NULL,
+                    '5': NULL_ADDRESS, to: NULL_ADDRESS,
+                    '6': '2', threshold: '2'
+                }, // Motion created
+                {
+                    '0': '0', motionId: '0',
+                    '1': alice.address, voter: alice.address,
+                    '2': '1', vote: '1'
+                }, // Alice votes yes
+                {
+                    '0': '0', motionId: '0',
+                    '1': '2', threshold: '2'
+                } // Threshold is changed
+            ]);
+        });
+
+        it('fails to create a change threshold motion for a static contract', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 2, 1], responseLatency: 1});
+
+            expect(
+                contract.call('createChangeThresholdMotion', [2], {caller: alice})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+
+        it('fails to create a change threshold motion with 0', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 1, 0], responseLatency: 1});
+
+            expect(
+                contract.call('createChangeThresholdMotion', [0], {caller: alice})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+
+        it('fails to create a change threshold motion with 0', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 1, 0], responseLatency: 1});
+
+            expect(
+                contract.call('createChangeThresholdMotion', [0], {caller: alice})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+
+        it('fails to create a change threshold motion higher than the number of members', async function() {
+            await contract.deploy({params: [[alice.address, bob.address], 1, 0], responseLatency: 1});
+
+            expect(
+                contract.call('createChangeThresholdMotion', [3], {caller: alice})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+
+        it('fails to execute a change threshold motion due to the number of members now being lower', async function() {
+            await contract.deploy({params: [[alice.address, bob.address, charlie.address], 2, 0], responseLatency: 1});
+
+            // Since 3 <= members.length, it can be created
+            await contract.call('createChangeThresholdMotion', [3], {caller: alice});
+
+            // Remove Charlie
+            await contract.call('createRemoveMemberMotion', [charlie.address], {caller: alice});
+            await contract.call('voteMotion', ['1'], {caller: bob});
+
+            // The number of members is now 3
+            expect(await contract.query('memberCount', [])).to.be.deep.equal(['2']);
+            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['0']);
+
+            // First motion is voted, fails
+            expect(
+                contract.call('voteMotion', [0], {caller: bob})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+    })
+
     describe('cancel vote', function() {
         it('cancels a vote', async function() {
             await contract.deploy({params: [[alice.address, bob.address], 2, 1], responseLatency: 1});

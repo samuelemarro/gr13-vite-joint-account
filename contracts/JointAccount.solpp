@@ -13,6 +13,7 @@ contract JointAccount {
         vitetoken tokenId,
         uint256 transferAmount,
         address to,
+        uint256 destinationAccount,
         uint256 threshold
     );
 
@@ -33,6 +34,7 @@ contract JointAccount {
         uint256 indexed motionId,
         vitetoken indexed tokenId,
         address to,
+        uint256 destinationAccount,
         uint256 amount
     );
 
@@ -71,6 +73,7 @@ contract JointAccount {
         vitetoken tokenId;
         uint256 transferAmount;
         address to;
+        uint256 destinationAccount;
         uint256 threshold;
 
         address proposer;
@@ -107,11 +110,16 @@ contract JointAccount {
         return accounts.length - 1;
     }
 
-    // This function helps to reduce the contract size by avoiding the need to store the entire
+    // These functions help to reduce the contract size by avoiding the need to store the entire
     // revert messages for every function.
     function _basicChecks(uint256 _accountId, uint256 _motionId) internal view {
         require(accountExists(_accountId), "Account does not exist");
         require(motionExists(_accountId, _motionId), "Motion does not exist");
+    }
+
+    function _motionChecks(uint256 _accountId) internal view {
+        require(accountExists(_accountId), "Account does not exist");
+        require(isMember(_accountId, msg.sender), "Not a member");
     }
 
     // ===Getters===
@@ -247,13 +255,15 @@ contract JointAccount {
     /// @param _tokenId The token id of the transfer
     /// @param _transferAmount The amount to transfer
     /// @param _to The address to transfer to
-    function createTransferMotion(uint256 _accountId, vitetoken _tokenId, uint256 _transferAmount, address _to) external {
-        require(accountExists(_accountId), "Account does not exist");
-        require(isMember(_accountId, msg.sender), "Not a member");
+    function createTransferMotion(uint256 _accountId, vitetoken _tokenId, uint256 _transferAmount, address _to, uint256 _destinationAccount) external {
+        _motionChecks(_accountId);
         require(balanceOf(_accountId, _tokenId) >= _transferAmount, "Insufficient balance");
-        accounts[_accountId].motions.push(Motion(MotionType.TRANSFER, _tokenId, _transferAmount, _to, NULL, msg.sender, 0, true));
+        accounts[_accountId].motions.push(Motion(MotionType.TRANSFER, _tokenId, _transferAmount, _to, _destinationAccount, NULL, msg.sender, 0, true));
 
-        emit MotionCreated(_accountId, accounts[_accountId].motions.length - 1, uint256(MotionType.TRANSFER), msg.sender, _tokenId, _transferAmount, _to, NULL);
+        require(_to != NULL_ADDRESS || _destinationAccount != NULL, "Address or destination account must be specified");
+        require(_to == NULL_ADDRESS || _destinationAccount == NULL, "Cannot specify both address and destination account");
+
+        emit MotionCreated(_accountId, accounts[_accountId].motions.length - 1, uint256(MotionType.TRANSFER), msg.sender, _tokenId, _transferAmount, _to, _destinationAccount, NULL);
         _voteMotion(_accountId, accounts[_accountId].motions.length - 1);
     }
 
@@ -261,13 +271,12 @@ contract JointAccount {
     ///
     /// @param _member The address to add
     function createAddMemberMotion(uint256 _accountId, address _member) external {
-        require(accountExists(_accountId), "Account does not exist");
-        require(!accounts[_accountId].isStatic, "Aannot add members to a static account");
-        require(isMember(_accountId, msg.sender), "Not a member");
+        _motionChecks(_accountId);
+        require(!accounts[_accountId].isStatic, "Cannot add members to a static account");
         require(!isMember(_accountId, _member), "Address is already a member");
-        accounts[_accountId].motions.push(Motion(MotionType.ADD_MEMBER, NULL_TOKEN, NULL, _member, NULL, msg.sender, 0, true));
+        accounts[_accountId].motions.push(Motion(MotionType.ADD_MEMBER, NULL_TOKEN, NULL, _member, NULL, NULL, msg.sender, 0, true));
 
-        emit MotionCreated(_accountId, accounts[_accountId].motions.length - 1, uint256(MotionType.ADD_MEMBER), msg.sender, NULL_TOKEN, NULL, _member, NULL);
+        emit MotionCreated(_accountId, accounts[_accountId].motions.length - 1, uint256(MotionType.ADD_MEMBER), msg.sender, NULL_TOKEN, NULL, _member, NULL, NULL);
         _voteMotion(_accountId, accounts[_accountId].motions.length - 1);
     }
 
@@ -281,9 +290,9 @@ contract JointAccount {
         require(isMember(_accountId, _member), "Address is not a member");
         require(accounts[_accountId].approvalThreshold < accounts[_accountId].members.length, "Removing would make the threshold impossible to reach");
 
-        accounts[_accountId].motions.push(Motion(MotionType.REMOVE_MEMBER, NULL_TOKEN, NULL, _member, NULL, msg.sender, 0, true));
+        accounts[_accountId].motions.push(Motion(MotionType.REMOVE_MEMBER, NULL_TOKEN, NULL, _member, NULL, NULL, msg.sender, 0, true));
 
-        emit MotionCreated(_accountId, accounts[_accountId].motions.length - 1, uint256(MotionType.REMOVE_MEMBER), msg.sender, NULL_TOKEN, NULL, _member, NULL);
+        emit MotionCreated(_accountId, accounts[_accountId].motions.length - 1, uint256(MotionType.REMOVE_MEMBER), msg.sender, NULL_TOKEN, NULL, _member, NULL, NULL);
         _voteMotion(_accountId, accounts[_accountId].motions.length - 1);
     }
 
@@ -293,23 +302,29 @@ contract JointAccount {
     ///
     /// @dev Note that it is possible to set the threshold to the current threshold
     function createChangeThresholdMotion(uint256 _accountId, uint256 _threshold) external {
-        require(accountExists(_accountId), "Account does not exist");
+        _motionChecks(_accountId);
         require(!accounts[_accountId].isStatic, "Cannot change the threshold of a static account");
-        require(isMember(_accountId, msg.sender), "Not a member");
         require(_threshold > 0, "Threshold must be > 0");
         require(_threshold <= accounts[_accountId].members.length, "Threshold too high");
 
-        accounts[_accountId].motions.push(Motion(MotionType.CHANGE_THRESHOLD, NULL_TOKEN, NULL, NULL_ADDRESS, _threshold, msg.sender, 0, true));
+        accounts[_accountId].motions.push(Motion(MotionType.CHANGE_THRESHOLD, NULL_TOKEN, NULL, NULL_ADDRESS, NULL, _threshold, msg.sender, 0, true));
 
-        emit MotionCreated(_accountId, accounts[_accountId].motions.length - 1, uint256(MotionType.CHANGE_THRESHOLD), msg.sender, NULL_TOKEN, NULL, NULL_ADDRESS, _threshold);
+        emit MotionCreated(_accountId, accounts[_accountId].motions.length - 1, uint256(MotionType.CHANGE_THRESHOLD), msg.sender, NULL_TOKEN, NULL, NULL_ADDRESS, NULL, _threshold);
         _voteMotion(_accountId, accounts[_accountId].motions.length - 1);
     }
 
-    function _transfer(uint256 _accountId, uint256 _motionId, vitetoken _tokenId, uint256 _transferAmount, address _to) internal {
+    function _transfer(uint256 _accountId, uint256 _motionId, vitetoken _tokenId, uint256 _transferAmount, address _to, uint256 _destinationAccount) internal {
         require(balanceOf(_accountId, _tokenId) >= _transferAmount, "Insufficient balance");
-        payable(_to).transfer(_tokenId, _transferAmount);
+        balances[_accountId][_tokenId] -= _transferAmount;
 
-        emit Transfer(_accountId, _motionId, _tokenId, _to, _transferAmount);
+        if (_to == NULL_ADDRESS) {
+            // Transfer to another joint account
+            balances[_destinationAccount][_tokenId] += _transferAmount;
+        } else {
+            payable(_to).transfer(_tokenId, _transferAmount);
+        }
+
+        emit Transfer(_accountId, _motionId, _tokenId, _to, _destinationAccount, _transferAmount);
     }
 
     function _addMember(uint256 _accountId, uint256 _motionId, address _member) internal {
@@ -369,7 +384,7 @@ contract JointAccount {
 
             // Note: Solidity doesn't have switch statements
             if (accounts[_accountId].motions[_motionId].motionType == MotionType.TRANSFER) {
-                _transfer(_accountId, _motionId, accounts[_accountId].motions[_motionId].tokenId, accounts[_accountId].motions[_motionId].transferAmount, accounts[_accountId].motions[_motionId].to);
+                _transfer(_accountId, _motionId, accounts[_accountId].motions[_motionId].tokenId, accounts[_accountId].motions[_motionId].transferAmount, accounts[_accountId].motions[_motionId].to, accounts[_accountId].motions[_motionId].destinationAccount);
             } else if (accounts[_accountId].motions[_motionId].motionType == MotionType.ADD_MEMBER) {
                 _addMember(_accountId, _motionId, accounts[_accountId].motions[_motionId].to);
             } else if (accounts[_accountId].motions[_motionId].motionType == MotionType.REMOVE_MEMBER) {

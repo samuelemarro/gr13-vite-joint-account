@@ -88,9 +88,9 @@ contract JointAccount {
     JointSubAccount[] private accounts;
 
     function createAccount(address[] memory _members, uint256 _approvalThreshold, bool _isStatic) external returns(uint256) {
-        require(_members.length > 0, "JointAccount: at least one member must be specified");
-        require(_approvalThreshold > 0, "JointAccount: approval threshold must be greater than 0");
-        require(_approvalThreshold <= _members.length, "JointAccount: approval threshold must be less than or equal to the number of members");
+        require(_members.length > 0, "At least one member must be specified");
+        require(_approvalThreshold > 0, "Approval threshold must be greater than 0");
+        require(_approvalThreshold <= _members.length, "Approval threshold must be less than or equal to the number of members");
 
         accounts.push();
         accounts[accounts.length - 1].members = _members;
@@ -107,23 +107,23 @@ contract JointAccount {
     }
 
     function approvalThreshold(uint256 _accountId) public view returns(uint256) {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
+        require(accountExists(_accountId), "Account does not exist");
         return accounts[_accountId].approvalThreshold;
     }
 
     function isStatic(uint256 _accountId) external view returns(bool) {
-        require(_accountId < accounts.length, "JointAccount: accountId out of bounds");
+        require(accountExists(_accountId), "Account does not exist");
         return accounts[_accountId].isStatic;
     }
 
     function balanceOf(uint256 _accountId, vitetoken _tokenId) public view returns(uint256) {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
+        require(accountExists(_accountId), "Account does not exist");
         return balances[_accountId][_tokenId];
     }
 
     /// @notice Returns the current members
     function getMembers(uint256 _accountId) external view returns (address[] memory) {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
+        require(accountExists(_accountId), "Account does not exist");
         return accounts[_accountId].members;
     }
 
@@ -131,13 +131,13 @@ contract JointAccount {
     ///
     /// @param _member The queried address
     function isMember(uint256 _accountId, address _member) public view returns (bool) {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
+        require(accountExists(_accountId), "Account does not exist");
         return _findMember(_accountId, _member) != NULL;
     }
 
     /// @notice Returns the number of members
     function memberCount(uint256 _accountId) external view returns (uint256) {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
+        require(accountExists(_accountId), "Account does not exist");
         return accounts[_accountId].members.length;
     }
 
@@ -145,7 +145,7 @@ contract JointAccount {
     ///
     /// @param _motionId The queried motion id
     function motionExists(uint256 _accountId, uint256 _motionId) public view returns (bool) {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
+        require(accountExists(_accountId), "Account does not exist");
         return _motionId < accounts[_accountId].motions.length;
     }
 
@@ -155,8 +155,8 @@ contract JointAccount {
     ///
     /// @return 0 = Transfer, 1 = Add Member, 2 = Remove Member, 3 = Change Threshold
     function motionType(uint256 _accountId, uint256 _motionId) external view returns (uint256) {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
-        require(motionExists(_accountId, _motionId), "JointAccount: motion does not exist");
+        require(accountExists(_accountId), "Account does not exist");
+        require(motionExists(_accountId, _motionId), "Motion does not exist");
         return uint256(accounts[_accountId].motions[_motionId].motionType);
     }
 
@@ -164,8 +164,8 @@ contract JointAccount {
     ///
     /// @param _motionId The queried motion id
     function tokenId(uint256 _accountId, uint256 _motionId) external view returns (vitetoken) {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
-        require(motionExists(_accountId, _motionId), "JointAccount: motion does not exist");
+        require(accountExists(_accountId), "Account does not exist");
+        require(motionExists(_accountId, _motionId), "Motion does not exist");
         return accounts[_accountId].motions[_motionId].tokenId;
     }
 
@@ -173,8 +173,8 @@ contract JointAccount {
     ///
     /// @param _motionId The queried motion id
     function transferAmount(uint256 _accountId, uint256 _motionId) external view returns (uint256) {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
-        require(motionExists(_accountId, _motionId), "JointAccount: motion does not exist");
+        require(accountExists(_accountId), "Account does not exist");
+        require(motionExists(_accountId, _motionId), "Motion does not exist");
         return accounts[_accountId].motions[_motionId].transferAmount;
     }
 
@@ -182,8 +182,8 @@ contract JointAccount {
     ///
     /// @param _motionId The queried motion id
     function to(uint256 _accountId, uint256 _motionId) external view returns (address) {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
-        require(motionExists(_accountId, _motionId), "JointAccount: motion does not exist");
+        require(accountExists(_accountId), "Account does not exist");
+        require(motionExists(_accountId, _motionId), "Motion does not exist");
         return accounts[_accountId].motions[_motionId].to;
     }
 
@@ -191,8 +191,8 @@ contract JointAccount {
     ///
     /// @param _motionId The queried motion id
     function threshold(uint256 _accountId, uint256 _motionId) external view returns (uint256) {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
-        require(motionExists(_accountId, _motionId), "JointAccount: motion does not exist");
+        require(accountExists(_accountId), "Account does not exist");
+        require(motionExists(_accountId, _motionId), "Motion does not exist");
         return accounts[_accountId].motions[_motionId].threshold;
     }
 
@@ -200,8 +200,8 @@ contract JointAccount {
     ///
     /// @param _motionId The queried motion id
     function proposer(uint256 _accountId, uint256 _motionId) external view returns (address) {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
-        require(motionExists(_accountId, _motionId), "JointAccount: motion does not exist");
+        require(accountExists(_accountId), "Account does not exist");
+        require(motionExists(_accountId, _motionId), "Motion does not exist");
         return accounts[_accountId].motions[_motionId].proposer;
     }
 
@@ -209,8 +209,8 @@ contract JointAccount {
     ///
     /// @param _motionId The queried motion id
     function voteCount(uint256 _accountId, uint256 _motionId) external view returns (uint256) {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
-        require(motionExists(_accountId, _motionId), "JointAccount: motion does not exist");
+        require(accountExists(_accountId), "Account does not exist");
+        require(motionExists(_accountId, _motionId), "Motion does not exist");
         return accounts[_accountId].motions[_motionId].voteCount;
     }
 
@@ -218,8 +218,8 @@ contract JointAccount {
     ///
     /// @param _motionId The queried motion id
     function active(uint256 _accountId, uint256 _motionId) external view returns (bool) {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
-        require(motionExists(_accountId, _motionId), "JointAccount: motion does not exist");
+        require(accountExists(_accountId), "Account does not exist");
+        require(motionExists(_accountId, _motionId), "Motion does not exist");
         return accounts[_accountId].motions[_motionId].active;
     }
 
@@ -228,8 +228,8 @@ contract JointAccount {
     /// @param _motionId The queried motion id
     /// @param _voter The queried member
     function voted(uint256 _accountId, uint256 _motionId, address _voter) external view returns (bool) {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
-        require(motionExists(_accountId, _motionId), "JointAccount: motion does not exist");
+        require(accountExists(_accountId), "Account does not exist");
+        require(motionExists(_accountId, _motionId), "Motion does not exist");
         return votes[_accountId][_motionId][_voter];
     }
 
@@ -241,9 +241,9 @@ contract JointAccount {
     /// @param _transferAmount The amount to transfer
     /// @param _to The address to transfer to
     function createTransferMotion(uint256 _accountId, vitetoken _tokenId, uint256 _transferAmount, address _to) external {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
-        require(isMember(_accountId, msg.sender), "JointAccount: not a member");
-        //require(balance(_accountId, _tokenId) >= _transferAmount, "JointAccount: insufficient balance");
+        require(accountExists(_accountId), "Account does not exist");
+        require(isMember(_accountId, msg.sender), "Not a member");
+        //require(balance(_accountId, _tokenId) >= _transferAmount, "insufficient balance");
         // TODO: Fix
         accounts[_accountId].motions.push(Motion(MotionType.TRANSFER, _tokenId, _transferAmount, _to, NULL, msg.sender, 0, true));
 
@@ -255,10 +255,10 @@ contract JointAccount {
     ///
     /// @param _member The address to add
     function createAddMemberMotion(uint256 _accountId, address _member) external {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
-        require(!accounts[_accountId].isStatic, "JointAccount: cannot add members to a static account");
-        require(isMember(_accountId, msg.sender), "JointAccount: not a member");
-        require(!isMember(_accountId, _member), "JointAccount: address is already a member");
+        require(accountExists(_accountId), "Account does not exist");
+        require(!accounts[_accountId].isStatic, "Aannot add members to a static account");
+        require(isMember(_accountId, msg.sender), "Not a member");
+        require(!isMember(_accountId, _member), "Address is already a member");
         accounts[_accountId].motions.push(Motion(MotionType.ADD_MEMBER, NULL_TOKEN, NULL, _member, NULL, msg.sender, 0, true));
 
         emit MotionCreated(_accountId, accounts[_accountId].motions.length - 1, uint256(MotionType.ADD_MEMBER), msg.sender, NULL_TOKEN, NULL, _member, NULL);
@@ -269,11 +269,11 @@ contract JointAccount {
     ///
     /// @param _member The address to remove
     function createRemoveMemberMotion(uint256 _accountId, address _member) external {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
-        require(!accounts[_accountId].isStatic, "JointAccount: cannot remove members from a static account");
-        require(isMember(_accountId, msg.sender), "JointAccount: not a member");
-        require(isMember(_accountId, _member), "JointAccount: address is not a member");
-        require(accounts[_accountId].approvalThreshold < accounts[_accountId].members.length, "JointAccount: removing would make the threshold impossible to reach");
+        require(accountExists(_accountId), "Account does not exist");
+        require(!accounts[_accountId].isStatic, "Cannot remove members from a static account");
+        require(isMember(_accountId, msg.sender), "Not a member");
+        require(isMember(_accountId, _member), "Address is not a member");
+        require(accounts[_accountId].approvalThreshold < accounts[_accountId].members.length, "Removing would make the threshold impossible to reach");
 
         accounts[_accountId].motions.push(Motion(MotionType.REMOVE_MEMBER, NULL_TOKEN, NULL, _member, NULL, msg.sender, 0, true));
 
@@ -287,11 +287,11 @@ contract JointAccount {
     ///
     /// @dev Note that it is possible to set the threshold to the current threshold
     function createChangeThresholdMotion(uint256 _accountId, uint256 _threshold) external {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
-        require(!accounts[_accountId].isStatic, "JointAccount: cannot change the threshold of a static account");
-        require(isMember(_accountId, msg.sender), "JointAccount: not a member");
-        require(_threshold > 0, "JointAccount: threshold must be greater than 0");
-        require(_threshold <= accounts[_accountId].members.length, "JointAccount: threshold too high");
+        require(accountExists(_accountId), "Account does not exist");
+        require(!accounts[_accountId].isStatic, "Cannot change the threshold of a static account");
+        require(isMember(_accountId, msg.sender), "Not a member");
+        require(_threshold > 0, "Threshold must be greater than 0");
+        require(_threshold <= accounts[_accountId].members.length, "Threshold too high");
 
         accounts[_accountId].motions.push(Motion(MotionType.CHANGE_THRESHOLD, NULL_TOKEN, NULL, NULL_ADDRESS, _threshold, msg.sender, 0, true));
 
@@ -300,7 +300,7 @@ contract JointAccount {
     }
 
     function _transfer(uint256 _accountId, uint256 _motionId, vitetoken _tokenId, uint256 _transferAmount, address _to) internal {
-        //require(balance(_accountId, _tokenId) >= _transferAmount, "JointAccount: insufficient balance");
+        //require(balance(_accountId, _tokenId) >= _transferAmount, "insufficient balance");
         // TODO: FIX
         payable(_to).transfer(_tokenId, _transferAmount);
 
@@ -308,7 +308,7 @@ contract JointAccount {
     }
 
     function _addMember(uint256 _accountId, uint256 _motionId, address _member) internal {
-        require(!isMember(_accountId, _member), "JointAccount: address is already a member");
+        require(!isMember(_accountId, _member), "Address is already a member");
         accounts[_accountId].members.push(_member);
 
         emit MemberAdded(_accountId, _motionId, _member);
@@ -331,10 +331,10 @@ contract JointAccount {
     }
 
     function _removeMember(uint256 _accountId, uint256 _motionId, address _member) internal {
-        require(accounts[_accountId].approvalThreshold < accounts[_accountId].members.length, "JointAccount: removing would make the threshold impossible to reach");
+        require(accounts[_accountId].approvalThreshold < accounts[_accountId].members.length, "Removing would make the threshold impossible to reach");
 
         uint256 index = _findMember(_accountId, _member);
-        require(index != NULL, "JointAccount: address is not a member");
+        require(index != NULL, "Address is not a member");
 
         for (uint256 i = index; i < accounts[_accountId].members.length - 1; i++) {
             accounts[_accountId].members[i] = accounts[_accountId].members[i + 1];
@@ -346,7 +346,7 @@ contract JointAccount {
     }
 
     function _changeThreshold(uint256 _accountId, uint256 _motionId, uint256 _threshold) internal {
-        require(_threshold <= accounts[_accountId].members.length, "JointAccount: threshold too high");
+        require(_threshold <= accounts[_accountId].members.length, "Threshold too high");
 
         accounts[_accountId].approvalThreshold = _threshold;
 
@@ -381,10 +381,10 @@ contract JointAccount {
     ///
     /// @param _motionId The id of the motion to vote on
     function voteMotion(uint256 _accountId, uint256 _motionId) external {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
-        require(isMember(_accountId, msg.sender), "JointAccount: not a member");
-        require(accounts[_accountId].motions[_motionId].active, "JointAccount: motion is not active");
-        require(!votes[_accountId][_motionId][msg.sender] || accounts[_accountId].motions[_motionId].voteCount >= accounts[_accountId].approvalThreshold, "JointAccount: you have already voted on this motion");
+        require(accountExists(_accountId), "Account does not exist");
+        require(isMember(_accountId, msg.sender), "Not a member");
+        require(accounts[_accountId].motions[_motionId].active, "Motion is not active");
+        require(!votes[_accountId][_motionId][msg.sender] || accounts[_accountId].motions[_motionId].voteCount >= accounts[_accountId].approvalThreshold, "you have already voted on this motion");
         _voteMotion(_accountId, _motionId);
     }
 
@@ -392,10 +392,10 @@ contract JointAccount {
     ///
     /// @param _motionId The id of the motion to cancel the vote on
     function cancelVote(uint256 _accountId, uint256 _motionId) external {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
-        require(isMember(_accountId, msg.sender), "JointAccount: not a member");
-        require(accounts[_accountId].motions[_motionId].active, "JointAccount: motion is not active");
-        require(votes[_accountId][_motionId][msg.sender], "JointAccount: you have not voted on this motion");
+        require(accountExists(_accountId), "Account does not exist");
+        require(isMember(_accountId, msg.sender), "Not a member");
+        require(accounts[_accountId].motions[_motionId].active, "Motion is not active");
+        require(votes[_accountId][_motionId][msg.sender], "You have not voted on this motion");
         votes[_accountId][_motionId][msg.sender] = false;
         accounts[_accountId].motions[_motionId].voteCount--;
 
@@ -406,10 +406,10 @@ contract JointAccount {
     ///
     /// @param _motionId The id of the motion to cancel
     function cancelMotion(uint256 _accountId, uint256 _motionId) external {
-        require(accountExists(_accountId), "JointAccount: account does not exist");
-        require(isMember(_accountId, msg.sender), "JointAccount: not a member");
-        require(accounts[_accountId].motions[_motionId].active, "JointAccount: motion is not active");
-        require(accounts[_accountId].motions[_motionId].proposer == msg.sender, "JointAccount: you are not the proposer of this motion");
+        require(accountExists(_accountId), "Account does not exist");
+        require(isMember(_accountId, msg.sender), "Not a member");
+        require(accounts[_accountId].motions[_motionId].active, "Motion is not active");
+        require(accounts[_accountId].motions[_motionId].proposer == msg.sender, "You are not the proposer of this motion");
         accounts[_accountId].motions[_motionId].active = false;
 
         emit MotionCancelled(_accountId, _motionId);

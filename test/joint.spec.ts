@@ -123,54 +123,55 @@ describe('test JointAccount', function () {
         it('creates an account', async function() {
             await contract.call('createAccount', [[alice.address, bob.address], 1, 1], {caller: alice});
 
-            expect(await contract.query('getMembers', [0])).to.be.deep.equal([[alice.address, bob.address]]);
-            expect(await contract.query('approvalThreshold', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('getMembers', [0, 0])).to.be.deep.equal([[alice.address, bob.address]]);
+            expect(await contract.query('approvalThreshold', [0, 0])).to.be.deep.equal(['1']);
         });
 
         it('creates an account with as many members as required votes', async function() {
             await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
 
-            expect(await contract.query('getMembers', [0])).to.be.deep.equal([[alice.address, bob.address]]);
-            expect(await contract.query('approvalThreshold', [0])).to.be.deep.equal(['2']);
-            // expect(await contract.query('memberCount', [])).to.be.deep.equal(['2']);
+            expect(await contract.query('getMembers', [0, 0])).to.be.deep.equal([[alice.address, bob.address]]);
+            expect(await contract.query('approvalThreshold', [0, 0])).to.be.deep.equal(['2']);
+            // expect(await contract.query('memberCount', [0, ])).to.be.deep.equal(['2']);
         });
     })
 
     describe('transfer motion', function() {
         it('creates and votes a transfer motion', async function() {
             await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
-            expect(contract.address).to.be.a('string');
 
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});
             await waitForContractReceive(testTokenId);
 
-            await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
+            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address, NULL], {caller: alice});
             await charlie.receiveAll();
 
-            expect(await contract.query('exists', [0])).to.be.deep.equal(['1']);
-            expect(await contract.query('motionType', [0])).to.be.deep.equal(['0']);
-            expect(await contract.query('tokenId', [0])).to.be.deep.equal([testTokenId]);
-            expect(await contract.query('transferAmount', [0])).to.be.deep.equal(['50']);
-            expect(await contract.query('to', [0])).to.be.deep.equal([charlie.address]);
-            expect(await contract.query('threshold', [0])).to.be.deep.equal([NULL]);
-            expect(await contract.query('proposer', [0])).to.be.deep.equal([alice.address]);
-            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['1']);
-            expect(await contract.query('active', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('motionExists', [0, 0])).to.be.deep.equal(['1']);
+            expect(await contract.query('motionType', [0, 0])).to.be.deep.equal(['0']);
+            expect(await contract.query('tokenId', [0, 0])).to.be.deep.equal([testTokenId]);
+            expect(await contract.query('transferAmount', [0, 0])).to.be.deep.equal(['50']);
+            expect(await contract.query('to', [0, 0])).to.be.deep.equal([charlie.address]);
+            expect(await contract.query('threshold', [0, 0])).to.be.deep.equal([NULL]);
+            expect(await contract.query('proposer', [0, 0])).to.be.deep.equal([alice.address]);
+            expect(await contract.query('voteCount', [0, 0])).to.be.deep.equal(['1']);
+            expect(await contract.query('active', [0, 0])).to.be.deep.equal(['1']);
 
-            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['1']);
-            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['0']);
+            expect(await contract.query('voted', [0, 0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, 0, bob.address])).to.be.deep.equal(['0']);
 
             // Motion hasn't been approved yet
             expect(await charlie.balance(testTokenId)).to.be.deep.equal('0');
 
-            await contract.call('voteMotion', ['0'], {caller: bob});
+            await contract.call('voteMotion', [0, '0'], {caller: bob});
             await charlie.receiveAll();
 
-            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['2']);
-            expect(await contract.query('active', [0])).to.be.deep.equal(['0']);
+            expect(await contract.query('voteCount', [0, 0])).to.be.deep.equal(['2']);
+            expect(await contract.query('active', [0, 0])).to.be.deep.equal(['0']);
 
-            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['1']);
-            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, 0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, 0, bob.address])).to.be.deep.equal(['1']);
 
             // Motion was approved
             expect(await charlie.balance(testTokenId)).to.be.deep.equal('50');
@@ -178,29 +179,45 @@ describe('test JointAccount', function () {
             const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
             checkEvents(events, [
                 {
-                    '0': '0', motionId: '0',
-                    '1': '0', motionType: '0',
-                    '2': alice.address, proposer: alice.address,
-                    '3': testTokenId, tokenId: testTokenId,
-                    '4': '50', transferAmount: '50',
-                    '5': charlie.address, to: charlie.address,
-                    '6': NULL, threshold: NULL
+                    '0': '0', accountId: '0',
+                    '1': alice.address, creator: alice.address
+                }, // Account created
+                {
+                    '0': '0', accountId: '0',
+                    '1': testFullId(), tokenId: testFullId(),
+                    '2': alice.address, from: alice.address,
+                    '3': '1000000', amount: '1000000'
+                }, // Alice deposits
+                {
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': '0', motionType: '0',
+                    '3': alice.address, proposer: alice.address,
+                    '4': testTokenId, tokenId: testTokenId,
+                    '5': '50', transferAmount: '50',
+                    '6': charlie.address, to: charlie.address,
+                    '7': NULL, destinationAccount: NULL,
+                    '8': NULL, threshold: NULL
                 }, // Motion created
                 {
-                    '0': '0', motionId: '0',
-                    '1': alice.address, voter: alice.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': alice.address, voter: alice.address,
+                    '3': '1', vote: '1'
                 }, // Alice votes yes
                 {
-                    '0': '0', motionId: '0',
-                    '1': bob.address, voter: bob.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': bob.address, voter: bob.address,
+                    '3': '1', vote: '1'
                 }, // Bob votes yes
                 {
-                    '0': '0', motionId: '0',
-                    '1': testFullId(), tokenId: testFullId(),
-                    '2': charlie.address, to: charlie.address,
-                    '3': '50', amount: '50'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': testFullId(), tokenId: testFullId(),
+                    '3': charlie.address, to: charlie.address,
+                    '4': NULL, destinationAccount: NULL,
+                    '5': '50', amount: '50'
                 } // Transfer is executed
             ]);
         });
@@ -208,10 +225,12 @@ describe('test JointAccount', function () {
         it('creates and immediately approves a transfer motion', async function() {
             await contract.call('createAccount', [[alice.address, bob.address], 1, 1], {caller: alice});
 
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
-            await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
+            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address, NULL], {caller: alice});
             await charlie.receiveAll();
 
             // Motion was approved
@@ -220,24 +239,39 @@ describe('test JointAccount', function () {
             const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
             checkEvents(events, [
                 {
-                    '0': '0', motionId: '0',
-                    '1': '0', motionType: '0',
-                    '2': alice.address, proposer: alice.address,
-                    '3': testTokenId, tokenId: testTokenId,
-                    '4': '50', transferAmount: '50',
-                    '5': charlie.address, to: charlie.address,
-                    '6': NULL, threshold: NULL
+                    '0': '0', accountId: '0',
+                    '1': alice.address, creator: alice.address
+                }, // Account created
+                {
+                    '0': '0', accountId: '0',
+                    '1': testFullId(), tokenId: testFullId(),
+                    '2': alice.address, from: alice.address,
+                    '3': '1000000', amount: '1000000'
+                }, // Alice deposits
+                {
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': '0', motionType: '0',
+                    '3': alice.address, proposer: alice.address,
+                    '4': testTokenId, tokenId: testTokenId,
+                    '5': '50', transferAmount: '50',
+                    '6': charlie.address, to: charlie.address,
+                    '7': NULL, destinationAccount: NULL,
+                    '8': NULL, threshold: NULL
                 }, // Motion created
                 {
-                    '0': '0', motionId: '0',
-                    '1': alice.address, voter: alice.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': alice.address, voter: alice.address,
+                    '3': '1', vote: '1'
                 }, // Alice votes yes
                 {
-                    '0': '0', motionId: '0',
-                    '1': testFullId(), tokenId: testFullId(),
-                    '2': charlie.address, to: charlie.address,
-                    '3': '50', amount: '50'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': testFullId(), tokenId: testFullId(),
+                    '3': charlie.address, to: charlie.address,
+                    '4': NULL, destinationAccount: NULL,
+                    '5': '50', amount: '50'
                 } // Transfer is executed
             ]);
         });
@@ -245,36 +279,40 @@ describe('test JointAccount', function () {
         it('fails to create a transfer motion without enough funds', async function() {
             await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
 
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
             expect(
-                contract.call('createTransferMotion', [testTokenId, '1000001', charlie.address], {caller: alice})
+                contract.call('createTransferMotion', [0, testTokenId, '1000001', charlie.address, NULL], {caller: alice})
             ).to.eventually.be.rejectedWith('revert');
         });
 
         it('fails to execute a transfer motion due to not having enough funds', async function() {
             await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
 
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
             // First motion. Since there are enough funds, it can be created
-            await contract.call('createTransferMotion', [testTokenId, '1000000', charlie.address], {caller: alice});
+            await contract.call('createTransferMotion', [0, testTokenId, '1000000', charlie.address, NULL], {caller: alice});
 
             // Second motion. Again this one can be created
-            await contract.call('createTransferMotion', [testTokenId, '1000000', charlie.address], {caller: alice});
+            await contract.call('createTransferMotion', [0, testTokenId, '1000000', charlie.address, NULL], {caller: alice});
 
             // First motion is approved, contract balance is now 0
-            await contract.call('voteMotion', ['0'], {caller: bob});
+            await contract.call('voteMotion', [0, '0'], {caller: bob});
             await charlie.receiveAll();
             expect(await contract.balance(testTokenId)).to.be.deep.equal('0');
 
-            expect(await contract.query('voteCount', [1])).to.be.deep.equal(['1']);
+            expect(await contract.query('voteCount', [0, 1])).to.be.deep.equal(['1']);
 
             // Second motion is voted, fails
             expect(
-                contract.call('voteMotion', [1], {caller: bob})
+                contract.call('voteMotion', [0, 1], {caller: bob})
             ).to.eventually.be.rejectedWith('revert');
         });
     })
@@ -285,34 +323,34 @@ describe('test JointAccount', function () {
 
             await contract.call('createAddMemberMotion', [charlie.address], {caller: alice});
 
-            expect(await contract.query('exists', [0])).to.be.deep.equal(['1']);
-            expect(await contract.query('motionType', [0])).to.be.deep.equal(['1']);
-            expect(await contract.query('tokenId', [0])).to.be.deep.equal([NULL_TOKEN]);
-            expect(await contract.query('transferAmount', [0])).to.be.deep.equal([NULL]);
-            expect(await contract.query('to', [0])).to.be.deep.equal([charlie.address]);
-            expect(await contract.query('threshold', [0])).to.be.deep.equal([NULL]);
-            expect(await contract.query('proposer', [0])).to.be.deep.equal([alice.address]);
-            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['1']);
-            expect(await contract.query('active', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('motionExists', [0, 0])).to.be.deep.equal(['1']);
+            expect(await contract.query('motionType', [0, 0])).to.be.deep.equal(['1']);
+            expect(await contract.query('tokenId', [0, 0])).to.be.deep.equal([NULL_TOKEN]);
+            expect(await contract.query('transferAmount', [0, 0])).to.be.deep.equal([NULL]);
+            expect(await contract.query('to', [0, 0])).to.be.deep.equal([charlie.address]);
+            expect(await contract.query('threshold', [0, 0])).to.be.deep.equal([NULL]);
+            expect(await contract.query('proposer', [0, 0])).to.be.deep.equal([alice.address]);
+            expect(await contract.query('voteCount', [0, 0])).to.be.deep.equal(['1']);
+            expect(await contract.query('active', [0, 0])).to.be.deep.equal(['1']);
 
-            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['1']);
-            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['0']);
+            expect(await contract.query('voted', [0, 0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, 0, bob.address])).to.be.deep.equal(['0']);
 
             // Motion hasn't been approved yet
-            // expect(await contract.query('memberCount', [])).to.be.deep.equal(['2']);
-            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['0']);
+            // expect(await contract.query('memberCount', [0, ])).to.be.deep.equal(['2']);
+            expect(await contract.query('isMember', [0, charlie.address])).to.be.deep.equal(['0']);
 
             await contract.call('voteMotion', ['0'], {caller: bob});
 
-            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['2']);
-            expect(await contract.query('active', [0])).to.be.deep.equal(['0']);
+            expect(await contract.query('voteCount', [0, 0])).to.be.deep.equal(['2']);
+            expect(await contract.query('active', [0, 0])).to.be.deep.equal(['0']);
 
-            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['1']);
-            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, 0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, 0, bob.address])).to.be.deep.equal(['1']);
 
             // Motion was approved
-            // expect(await contract.query('memberCount', [])).to.be.deep.equal(['3']);
-            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['1']);
+            // expect(await contract.query('memberCount', [0, ])).to.be.deep.equal(['3']);
+            expect(await contract.query('isMember', [0, charlie.address])).to.be.deep.equal(['1']);
 
             const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
             checkEvents(events, [
@@ -345,14 +383,16 @@ describe('test JointAccount', function () {
         it('creates and immediately approves an add member motion', async function() {
             await contract.call('createAccount', [[alice.address, bob.address], 1, 0], {caller: alice});
 
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
             await contract.call('createAddMemberMotion', [charlie.address], {caller: alice});
 
             // Motion was approved
-            // expect(await contract.query('memberCount', [])).to.be.deep.equal(['3']);
-            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['1']);
+            // expect(await contract.query('memberCount', [0, ])).to.be.deep.equal(['3']);
+            expect(await contract.query('isMember', [0, charlie.address])).to.be.deep.equal(['1']);
 
             const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
             checkEvents(events, [
@@ -404,10 +444,10 @@ describe('test JointAccount', function () {
 
             // First motion is approved, Charlie is now a member
             await contract.call('voteMotion', ['0'], {caller: bob});
-            // expect(await contract.query('memberCount', [])).to.be.deep.equal(['3']);
-            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['1']);
+            // expect(await contract.query('memberCount', [0, ])).to.be.deep.equal(['3']);
+            expect(await contract.query('isMember', [0, charlie.address])).to.be.deep.equal(['1']);
 
-            expect(await contract.query('voteCount', [1])).to.be.deep.equal(['1']);
+            expect(await contract.query('voteCount', [0, 1])).to.be.deep.equal(['1']);
 
             // Second motion is voted, fails
             expect(
@@ -421,34 +461,34 @@ describe('test JointAccount', function () {
             await contract.call('createAccount', [[alice.address, bob.address, charlie.address], 2, 0], {caller: alice});
             await contract.call('createRemoveMemberMotion', [charlie.address], {caller: alice});
 
-            expect(await contract.query('exists', [0])).to.be.deep.equal(['1']);
-            expect(await contract.query('motionType', [0])).to.be.deep.equal(['2']);
-            expect(await contract.query('tokenId', [0])).to.be.deep.equal([NULL_TOKEN]);
-            expect(await contract.query('transferAmount', [0])).to.be.deep.equal([NULL]);
-            expect(await contract.query('to', [0])).to.be.deep.equal([charlie.address]);
-            expect(await contract.query('threshold', [0])).to.be.deep.equal([NULL]);
-            expect(await contract.query('proposer', [0])).to.be.deep.equal([alice.address]);
-            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['1']);
-            expect(await contract.query('active', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('motionExists', [0, 0])).to.be.deep.equal(['1']);
+            expect(await contract.query('motionType', [0, 0])).to.be.deep.equal(['2']);
+            expect(await contract.query('tokenId', [0, 0])).to.be.deep.equal([NULL_TOKEN]);
+            expect(await contract.query('transferAmount', [0, 0])).to.be.deep.equal([NULL]);
+            expect(await contract.query('to', [0, 0])).to.be.deep.equal([charlie.address]);
+            expect(await contract.query('threshold', [0, 0])).to.be.deep.equal([NULL]);
+            expect(await contract.query('proposer', [0, 0])).to.be.deep.equal([alice.address]);
+            expect(await contract.query('voteCount', [0, 0])).to.be.deep.equal(['1']);
+            expect(await contract.query('active', [0, 0])).to.be.deep.equal(['1']);
 
-            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['1']);
-            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['0']);
+            expect(await contract.query('voted', [0, 0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, 0, bob.address])).to.be.deep.equal(['0']);
 
             // Motion hasn't been approved yet
-            // expect(await contract.query('memberCount', [])).to.be.deep.equal(['3']);
-            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['1']);
+            // expect(await contract.query('memberCount', [0, ])).to.be.deep.equal(['3']);
+            expect(await contract.query('isMember', [0, charlie.address])).to.be.deep.equal(['1']);
 
             await contract.call('voteMotion', ['0'], {caller: bob});
 
-            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['2']);
-            expect(await contract.query('active', [0])).to.be.deep.equal(['0']);
+            expect(await contract.query('voteCount', [0, 0])).to.be.deep.equal(['2']);
+            expect(await contract.query('active', [0, 0])).to.be.deep.equal(['0']);
 
-            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['1']);
-            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, 0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, 0, bob.address])).to.be.deep.equal(['1']);
 
             // Motion was approved
-            // expect(await contract.query('memberCount', [])).to.be.deep.equal(['2']);
-            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['0']);
+            // expect(await contract.query('memberCount', [0, ])).to.be.deep.equal(['2']);
+            expect(await contract.query('isMember', [0, charlie.address])).to.be.deep.equal(['0']);
 
             const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
             checkEvents(events, [
@@ -484,8 +524,8 @@ describe('test JointAccount', function () {
             await contract.call('createRemoveMemberMotion', [charlie.address], {caller: alice});
 
             // Motion was approved
-            // expect(await contract.query('memberCount', [])).to.be.deep.equal(['2']);
-            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['0']);
+            // expect(await contract.query('memberCount', [0, ])).to.be.deep.equal(['2']);
+            expect(await contract.query('isMember', [0, charlie.address])).to.be.deep.equal(['0']);
 
             const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
             checkEvents(events, [
@@ -513,7 +553,9 @@ describe('test JointAccount', function () {
         it('fails to vote after being removed', async function() {
             await contract.call('createAccount', [[alice.address, bob.address, charlie.address], 2, 0], {caller: alice});
 
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
             await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice})
@@ -522,8 +564,8 @@ describe('test JointAccount', function () {
             await contract.call('createRemoveMemberMotion', [charlie.address], {caller: alice});
             await contract.call('voteMotion', [1], {caller: bob});
 
-            // expect(await contract.query('memberCount', [])).to.be.deep.equal(['2']);
-            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['0']);
+            // expect(await contract.query('memberCount', [0, ])).to.be.deep.equal(['2']);
+            expect(await contract.query('isMember', [0, charlie.address])).to.be.deep.equal(['0']);
 
             expect(
                 contract.call('voteMotion', ['0'], {caller: charlie})
@@ -557,10 +599,10 @@ describe('test JointAccount', function () {
 
             // First motion is approved, Charlie is no longer a member
             await contract.call('voteMotion', ['0'], {caller: bob});
-            //expect(await contract.query('memberCount', [])).to.be.deep.equal(['2']);
-            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['0']);
+            //expect(await contract.query('memberCount', [0, ])).to.be.deep.equal(['2']);
+            expect(await contract.query('isMember', [0, charlie.address])).to.be.deep.equal(['0']);
 
-            expect(await contract.query('voteCount', [1])).to.be.deep.equal(['1']);
+            expect(await contract.query('voteCount', [0, 1])).to.be.deep.equal(['1']);
 
             // Second motion is voted, fails
             expect(
@@ -579,7 +621,7 @@ describe('test JointAccount', function () {
             await contract.call('voteMotion', [1], {caller: bob});
 
             // Second motion is approved, threshold is now 3
-            expect(await contract.query('approvalThreshold', [])).to.be.deep.equal(['3']);
+            expect(await contract.query('approvalThreshold', [0, ])).to.be.deep.equal(['3']);
 
             // First motion is voted, fails
             // 2nd vote out of 3
@@ -598,32 +640,32 @@ describe('test JointAccount', function () {
 
             await contract.call('createChangeThresholdMotion', [1], {caller: alice});
 
-            expect(await contract.query('exists', [0])).to.be.deep.equal(['1']);
-            expect(await contract.query('motionType', [0])).to.be.deep.equal(['3']);
-            expect(await contract.query('tokenId', [0])).to.be.deep.equal([NULL_TOKEN]);
-            expect(await contract.query('transferAmount', [0])).to.be.deep.equal([NULL]);
-            expect(await contract.query('to', [0])).to.be.deep.equal([NULL_ADDRESS]);
-            expect(await contract.query('threshold', [0])).to.be.deep.equal(['1']);
-            expect(await contract.query('proposer', [0])).to.be.deep.equal([alice.address]);
-            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['1']);
-            expect(await contract.query('active', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('motionExists', [0, 0])).to.be.deep.equal(['1']);
+            expect(await contract.query('motionType', [0, 0])).to.be.deep.equal(['3']);
+            expect(await contract.query('tokenId', [0, 0])).to.be.deep.equal([NULL_TOKEN]);
+            expect(await contract.query('transferAmount', [0, 0])).to.be.deep.equal([NULL]);
+            expect(await contract.query('to', [0, 0])).to.be.deep.equal([NULL_ADDRESS]);
+            expect(await contract.query('threshold', [0, 0])).to.be.deep.equal(['1']);
+            expect(await contract.query('proposer', [0, 0])).to.be.deep.equal([alice.address]);
+            expect(await contract.query('voteCount', [0, 0])).to.be.deep.equal(['1']);
+            expect(await contract.query('active', [0, 0])).to.be.deep.equal(['1']);
 
-            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['1']);
-            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['0']);
+            expect(await contract.query('voted', [0, 0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, 0, bob.address])).to.be.deep.equal(['0']);
 
             // Motion hasn't been approved yet
-            expect(await contract.query('approvalThreshold', [])).to.be.deep.equal(['2']);
+            expect(await contract.query('approvalThreshold', [0, ])).to.be.deep.equal(['2']);
 
             await contract.call('voteMotion', ['0'], {caller: bob});
 
-            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['2']);
-            expect(await contract.query('active', [0])).to.be.deep.equal(['0']);
+            expect(await contract.query('voteCount', [0, 0])).to.be.deep.equal(['2']);
+            expect(await contract.query('active', [0, 0])).to.be.deep.equal(['0']);
 
-            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['1']);
-            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, 0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, 0, bob.address])).to.be.deep.equal(['1']);
 
             // Motion was approved
-            expect(await contract.query('approvalThreshold', [])).to.be.deep.equal(['1']);
+            expect(await contract.query('approvalThreshold', [0, ])).to.be.deep.equal(['1']);
 
             const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
             checkEvents(events, [
@@ -659,7 +701,7 @@ describe('test JointAccount', function () {
             await contract.call('createChangeThresholdMotion', [2], {caller: alice});
 
             // Motion was approved
-            expect(await contract.query('approvalThreshold', [])).to.be.deep.equal(['2']);
+            expect(await contract.query('approvalThreshold', [0, ])).to.be.deep.equal(['2']);
 
             const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
             checkEvents(events, [
@@ -687,7 +729,9 @@ describe('test JointAccount', function () {
         it('makes voting on a motion possible after decreasing the threshold', async function() {
             await contract.call('createAccount', [[alice.address, bob.address], 2, 0], {caller: alice});
 
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
             await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
@@ -695,7 +739,7 @@ describe('test JointAccount', function () {
             // Lower the threshold
             await contract.call('createChangeThresholdMotion', [1], {caller: alice});
             await contract.call('voteMotion', [1], {caller: bob});
-            expect(await contract.query('approvalThreshold', [])).to.be.deep.equal(['1']);
+            expect(await contract.query('approvalThreshold', [0, ])).to.be.deep.equal(['1']);
 
             // Alice votes again
             await contract.call('voteMotion', [0], {caller: alice});
@@ -800,8 +844,8 @@ describe('test JointAccount', function () {
             await contract.call('voteMotion', ['1'], {caller: bob});
 
             // The number of members is now 3
-            //expect(await contract.query('memberCount', [])).to.be.deep.equal(['2']);
-            expect(await contract.query('isMember', [charlie.address])).to.be.deep.equal(['0']);
+            //expect(await contract.query('memberCount', [0, ])).to.be.deep.equal(['2']);
+            expect(await contract.query('isMember', [0, charlie.address])).to.be.deep.equal(['0']);
 
             // First motion is voted, fails
             expect(
@@ -814,36 +858,38 @@ describe('test JointAccount', function () {
         it('cancels a vote', async function() {
             await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
 
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
             // Alice votes yes as part of the motion creation process
             await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
 
-            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['1']);
-            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['1']);
-            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['0']);
+            expect(await contract.query('voteCount', [0, 0])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, 0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, 0, bob.address])).to.be.deep.equal(['0']);
 
             // Alice cancels the vote
             await contract.call('cancelVote', ['0'], {caller: alice});
 
-            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['0']);
-            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['0']);
-            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['0']);
+            expect(await contract.query('voteCount', [0, 0])).to.be.deep.equal(['0']);
+            expect(await contract.query('voted', [0, 0, alice.address])).to.be.deep.equal(['0']);
+            expect(await contract.query('voted', [0, 0, bob.address])).to.be.deep.equal(['0']);
 
             // Bob votes yes
             await contract.call('voteMotion', ['0'], {caller: bob});
 
-            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['1']);
-            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['0']);
-            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voteCount', [0, 0])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, 0, alice.address])).to.be.deep.equal(['0']);
+            expect(await contract.query('voted', [0, 0, bob.address])).to.be.deep.equal(['1']);
 
             // Alice votes yes
             await contract.call('voteMotion', ['0'], {caller: alice});
 
-            expect(await contract.query('voteCount', [0])).to.be.deep.equal(['2']);
-            expect(await contract.query('voted', [0, alice.address])).to.be.deep.equal(['1']);
-            expect(await contract.query('voted', [0, bob.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voteCount', [0, 0])).to.be.deep.equal(['2']);
+            expect(await contract.query('voted', [0, 0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, 0, bob.address])).to.be.deep.equal(['1']);
 
             await charlie.receiveAll();
             
@@ -893,7 +939,9 @@ describe('test JointAccount', function () {
         it('fails to cancel a vote twice (as proposer)', async function() {
             await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
 
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
             await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
@@ -909,7 +957,9 @@ describe('test JointAccount', function () {
         it('fails to cancel a vote twice (as non-proposer)', async function() {
             await contract.call('createAccount', [[alice.address, bob.address, charlie.address], 3, 1], {caller: alice});
 
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
             await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
@@ -927,7 +977,9 @@ describe('test JointAccount', function () {
         it('fails to cancel a vote without voting', async function() {
             await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
 
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
             await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
@@ -943,7 +995,9 @@ describe('test JointAccount', function () {
         it('cancels a motion', async function () {
             await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
 
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
             await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
@@ -951,7 +1005,7 @@ describe('test JointAccount', function () {
 
             await contract.call('cancelMotion', [0], {caller: alice});
 
-            expect(await contract.query('active', [0])).to.be.deep.equal(['0']);
+            expect(await contract.query('active', [0, 0])).to.be.deep.equal(['0']);
 
             const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
             checkEvents(events, [
@@ -978,7 +1032,9 @@ describe('test JointAccount', function () {
         it('fails to cancel an inactive motion', async function () {
             await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
 
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
             await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
@@ -994,7 +1050,9 @@ describe('test JointAccount', function () {
         it('fails to vote on an inactive motion', async function () {
             await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
 
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
             await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
@@ -1011,7 +1069,9 @@ describe('test JointAccount', function () {
         it('fails to create a motion without being a member', async function() {
             await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
 
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
             expect(
@@ -1030,7 +1090,9 @@ describe('test JointAccount', function () {
         it('fails to vote without being a member', async function() {
             await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
 
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
             await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
@@ -1044,7 +1106,9 @@ describe('test JointAccount', function () {
         it('fails to vote twice (as proposer)', async function() {
             await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
 
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
             await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
@@ -1058,7 +1122,9 @@ describe('test JointAccount', function () {
         it('fails to vote twice (as non-proposer)', async function() {
             await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
 
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
             await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});
@@ -1074,7 +1140,9 @@ describe('test JointAccount', function () {
         it('fails to vote an inactive motion', async function() {
             await contract.call('createAccount', [[alice.address, bob.address], 1, 1], {caller: alice});
 
-            await deployer.sendToken(contract.address, '1000000', testTokenId);
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
             await contract.call('createTransferMotion', [testTokenId, '50', charlie.address], {caller: alice});

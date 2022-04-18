@@ -52,7 +52,14 @@ contract JointAccount {
         uint256 indexed accountId,
         uint256 indexed motionId,
         uint256 threshold
-    );    
+    );
+
+    event Deposit (
+        uint256 indexed accountId,
+        vitetoken indexed tokenId,
+        address indexed from,
+        uint256 amount
+    );
 
     uint256 private constant NULL = 2**256 - 1;
     address private constant NULL_ADDRESS = "vite_0000000000000000000000000000000000000000a4f3a0cb58";
@@ -371,6 +378,17 @@ contract JointAccount {
                 _changeThreshold(_accountId, _motionId, accounts[_accountId].motions[_motionId].threshold);
             }
         }
+    }
+
+    // ===Deposit===
+
+    function deposit(uint256 _accountId) external payable {
+        require(accountExists(_accountId), "Account does not exist");
+        require(isMember(_accountId, msg.sender), "Not a member");
+
+        balances[_accountId][msg.token] += msg.value;
+
+        emit Deposit(_accountId, msg.token, msg.sender, msg.value);
     }
 
     // ===Motion Voting===

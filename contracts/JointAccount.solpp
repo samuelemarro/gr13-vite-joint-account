@@ -5,6 +5,11 @@
 pragma soliditypp ^0.8.0;
 
 contract JointAccount {
+    event AccountCreated (
+        uint256 indexed accountId,
+        address indexed creator
+    );
+
     event MotionCreated (
         uint256 indexed accountId,
         uint256 indexed motionId,
@@ -106,6 +111,8 @@ contract JointAccount {
         accounts[accounts.length - 1].members = _members;
         accounts[accounts.length - 1].approvalThreshold = _approvalThreshold;
         accounts[accounts.length - 1].isStatic = _isStatic;
+
+        emit AccountCreated(accounts.length - 1, msg.sender);
 
         return accounts.length - 1;
     }

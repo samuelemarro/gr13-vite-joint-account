@@ -109,6 +109,7 @@ contract JointAccount {
 
     /// @notice Returns the current members
     function getMembers(uint256 _accountId) external view returns (address[] memory) {
+        require(accountExists(_accountId), "JointAccount: account does not exist");
         return accounts[_accountId].members;
     }
 

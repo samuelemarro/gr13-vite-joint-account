@@ -81,6 +81,9 @@ contract JointAccount {
     // accountId => (motionId => (address => bool)) mapping
     // Note that structs cannot contain mappings
     mapping(uint256 => mapping(uint256 => mapping(address => bool))) votes;
+
+    // accountId => (tokenId => amount) mapping
+    mapping(uint256 => mapping(vitetoken => uint256)) balances;
     
     JointSubAccount[] private accounts;
 
@@ -111,6 +114,11 @@ contract JointAccount {
     function isStatic(uint256 _accountId) external view returns(bool) {
         require(_accountId < accounts.length, "JointAccount: accountId out of bounds");
         return accounts[_accountId].isStatic;
+    }
+
+    function balanceOf(uint256 _accountId, vitetoken _tokenId) public view returns(uint256) {
+        require(accountExists(_accountId), "JointAccount: account does not exist");
+        return balances[_accountId][_tokenId];
     }
 
     /// @notice Returns the current members

@@ -96,8 +96,8 @@ contract JointAccount {
 
     function createAccount(address[] memory _members, uint256 _approvalThreshold, bool _isStatic) external returns(uint256) {
         require(_members.length > 0, "At least one member must be specified");
-        require(_approvalThreshold > 0, "Approval threshold must be greater than 0");
-        require(_approvalThreshold <= _members.length, "Approval threshold must be less than or equal to the number of members");
+        require(_approvalThreshold > 0, "Approval threshold must be > 0");
+        require(_approvalThreshold <= _members.length, "Approval threshold must be <= the number of members");
 
         accounts.push();
         accounts[accounts.length - 1].members = _members;
@@ -142,11 +142,13 @@ contract JointAccount {
         return _findMember(_accountId, _member) != NULL;
     }
 
+    /*
+    // Removed to reduce contract size
     /// @notice Returns the number of members
     function memberCount(uint256 _accountId) external view returns (uint256) {
         require(accountExists(_accountId), "Account does not exist");
         return accounts[_accountId].members.length;
-    }
+    }*/
 
     /// @notice Returns true if a motion exists
     ///
@@ -296,7 +298,7 @@ contract JointAccount {
         require(accountExists(_accountId), "Account does not exist");
         require(!accounts[_accountId].isStatic, "Cannot change the threshold of a static account");
         require(isMember(_accountId, msg.sender), "Not a member");
-        require(_threshold > 0, "Threshold must be greater than 0");
+        require(_threshold > 0, "Threshold must be > 0");
         require(_threshold <= accounts[_accountId].members.length, "Threshold too high");
 
         accounts[_accountId].motions.push(Motion(MotionType.CHANGE_THRESHOLD, NULL_TOKEN, NULL, NULL_ADDRESS, _threshold, msg.sender, 0, true));
@@ -400,7 +402,7 @@ contract JointAccount {
         require(accountExists(_accountId), "Account does not exist");
         require(isMember(_accountId, msg.sender), "Not a member");
         require(accounts[_accountId].motions[_motionId].active, "Motion is not active");
-        require(!votes[_accountId][_motionId][msg.sender] || accounts[_accountId].motions[_motionId].voteCount >= accounts[_accountId].approvalThreshold, "you have already voted on this motion");
+        require(!votes[_accountId][_motionId][msg.sender] || accounts[_accountId].motions[_motionId].voteCount >= accounts[_accountId].approvalThreshold, "Already voted on this motion");
         _voteMotion(_accountId, _motionId);
     }
 

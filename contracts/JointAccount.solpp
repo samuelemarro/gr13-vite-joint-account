@@ -89,14 +89,10 @@ contract JointAccount {
         require(_approvalThreshold > 0, "JointAccount: approval threshold must be greater than 0");
         require(_approvalThreshold <= _members.length, "JointAccount: approval threshold must be less than or equal to the number of members");
 
-        JointSubAccount memory account = JointSubAccount({
-            members: _members,
-            approvalThreshold: _approvalThreshold,
-            isStatic: _isStatic,
-            motions: new Motion[](0)
-        });
-
-        accounts.push(account);
+        accounts.push();
+        accounts[accounts.length - 1].members = _members;
+        accounts[accounts.length - 1].approvalThreshold = _approvalThreshold;
+        accounts[accounts.length - 1].isStatic = _isStatic;
 
         return accounts.length - 1;
     }

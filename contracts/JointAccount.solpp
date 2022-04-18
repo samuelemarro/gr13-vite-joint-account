@@ -107,6 +107,13 @@ contract JointAccount {
         return accounts.length - 1;
     }
 
+    // This function helps to reduce the contract size by avoiding the need to store the entire
+    // revert messages for every function.
+    function _basicChecks(uint256 _accountId, uint256 _motionId) internal view {
+        require(accountExists(_accountId), "Account does not exist");
+        require(motionExists(_accountId, _motionId), "Motion does not exist");
+    }
+
     // ===Getters===
 
     function accountExists(uint256 _accountId) public view returns(bool) {
@@ -164,8 +171,7 @@ contract JointAccount {
     ///
     /// @return 0 = Transfer, 1 = Add Member, 2 = Remove Member, 3 = Change Threshold
     function motionType(uint256 _accountId, uint256 _motionId) external view returns (uint256) {
-        require(accountExists(_accountId), "Account does not exist");
-        require(motionExists(_accountId, _motionId), "Motion does not exist");
+        _basicChecks(_accountId, _motionId);
         return uint256(accounts[_accountId].motions[_motionId].motionType);
     }
 
@@ -173,8 +179,7 @@ contract JointAccount {
     ///
     /// @param _motionId The queried motion id
     function tokenId(uint256 _accountId, uint256 _motionId) external view returns (vitetoken) {
-        require(accountExists(_accountId), "Account does not exist");
-        require(motionExists(_accountId, _motionId), "Motion does not exist");
+        _basicChecks(_accountId, _motionId);
         return accounts[_accountId].motions[_motionId].tokenId;
     }
 
@@ -182,8 +187,7 @@ contract JointAccount {
     ///
     /// @param _motionId The queried motion id
     function transferAmount(uint256 _accountId, uint256 _motionId) external view returns (uint256) {
-        require(accountExists(_accountId), "Account does not exist");
-        require(motionExists(_accountId, _motionId), "Motion does not exist");
+        _basicChecks(_accountId, _motionId);
         return accounts[_accountId].motions[_motionId].transferAmount;
     }
 
@@ -191,8 +195,7 @@ contract JointAccount {
     ///
     /// @param _motionId The queried motion id
     function to(uint256 _accountId, uint256 _motionId) external view returns (address) {
-        require(accountExists(_accountId), "Account does not exist");
-        require(motionExists(_accountId, _motionId), "Motion does not exist");
+        _basicChecks(_accountId, _motionId);
         return accounts[_accountId].motions[_motionId].to;
     }
 
@@ -200,8 +203,7 @@ contract JointAccount {
     ///
     /// @param _motionId The queried motion id
     function threshold(uint256 _accountId, uint256 _motionId) external view returns (uint256) {
-        require(accountExists(_accountId), "Account does not exist");
-        require(motionExists(_accountId, _motionId), "Motion does not exist");
+        _basicChecks(_accountId, _motionId);
         return accounts[_accountId].motions[_motionId].threshold;
     }
 
@@ -209,8 +211,7 @@ contract JointAccount {
     ///
     /// @param _motionId The queried motion id
     function proposer(uint256 _accountId, uint256 _motionId) external view returns (address) {
-        require(accountExists(_accountId), "Account does not exist");
-        require(motionExists(_accountId, _motionId), "Motion does not exist");
+        _basicChecks(_accountId, _motionId);
         return accounts[_accountId].motions[_motionId].proposer;
     }
 
@@ -218,8 +219,7 @@ contract JointAccount {
     ///
     /// @param _motionId The queried motion id
     function voteCount(uint256 _accountId, uint256 _motionId) external view returns (uint256) {
-        require(accountExists(_accountId), "Account does not exist");
-        require(motionExists(_accountId, _motionId), "Motion does not exist");
+        _basicChecks(_accountId, _motionId);
         return accounts[_accountId].motions[_motionId].voteCount;
     }
 
@@ -227,8 +227,7 @@ contract JointAccount {
     ///
     /// @param _motionId The queried motion id
     function active(uint256 _accountId, uint256 _motionId) external view returns (bool) {
-        require(accountExists(_accountId), "Account does not exist");
-        require(motionExists(_accountId, _motionId), "Motion does not exist");
+        _basicChecks(_accountId, _motionId);
         return accounts[_accountId].motions[_motionId].active;
     }
 
@@ -237,8 +236,7 @@ contract JointAccount {
     /// @param _motionId The queried motion id
     /// @param _voter The queried member
     function voted(uint256 _accountId, uint256 _motionId, address _voter) external view returns (bool) {
-        require(accountExists(_accountId), "Account does not exist");
-        require(motionExists(_accountId, _motionId), "Motion does not exist");
+        _basicChecks(_accountId, _motionId);
         return votes[_accountId][_motionId][_voter];
     }
 

@@ -123,6 +123,9 @@ describe('test JointAccount', function () {
         it('creates an account', async function() {
             await contract.call('createAccount', [[alice.address, bob.address], 1, 1, 0], {caller: alice});
 
+            expect(await contract.query('accountExists', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('isStatic', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('isMemberOnlyDeposit', [0])).to.be.deep.equal(['0']);
             expect(await contract.query('getMembers', [0])).to.be.deep.equal([[alice.address, bob.address]]);
             expect(await contract.query('approvalThreshold', [0])).to.be.deep.equal(['1']);
         });
@@ -130,9 +133,21 @@ describe('test JointAccount', function () {
         it('creates an account with as many members as required votes', async function() {
             await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
 
+            expect(await contract.query('accountExists', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('isStatic', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('isMemberOnlyDeposit', [0])).to.be.deep.equal(['0']);
             expect(await contract.query('getMembers', [0])).to.be.deep.equal([[alice.address, bob.address]]);
             expect(await contract.query('approvalThreshold', [0])).to.be.deep.equal(['2']);
             // expect(await contract.query('memberCount', [0, ])).to.be.deep.equal(['2']);
+        });
+
+        it('creates two accounts', async function() {
+            await contract.call('createAccount', [[alice.address, bob.address], 1, 1, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, charlie.address], 1, 1, 0], {caller: alice});
+
+            expect(await contract.query('accountExists', [0])).to.be.deep.equal(['1']);
+            expect(await contract.query('accountExists', [1])).to.be.deep.equal(['1']);
+            expect(await contract.query('accountExists', [2])).to.be.deep.equal(['0']);
         });
     })
 

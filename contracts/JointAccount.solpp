@@ -167,6 +167,8 @@ contract JointAccount {
     }
 
     /// @notice Returns the current members
+    ///
+    /// @param _accountId Account id
     function getMembers(uint256 _accountId) external view returns (address[] memory) {
         _accountCheck(_accountId);
         return accounts[_accountId].members;
@@ -174,6 +176,7 @@ contract JointAccount {
 
     /// @notice Returns true if the given address is a member
     ///
+    /// @param _accountId Account id
     /// @param _member The queried address
     function isMember(uint256 _accountId, address _member) public view returns (bool) {
         require(accountExists(_accountId), "Account does not exist");
@@ -198,6 +201,7 @@ contract JointAccount {
 
     /// @notice Returns the type of a motion
     ///
+    /// @param _accountId Account id
     /// @param _motionId The queried motion id
     ///
     /// @return 0 = Transfer, 1 = Add Member, 2 = Remove Member, 3 = Change Threshold
@@ -208,6 +212,7 @@ contract JointAccount {
 
     /// @notice Returns the token id of a motion
     ///
+    /// @param _accountId Account id
     /// @param _motionId The queried motion id
     function tokenId(uint256 _accountId, uint256 _motionId) external view returns (vitetoken) {
         _basicChecks(_accountId, _motionId);
@@ -216,6 +221,7 @@ contract JointAccount {
 
     /// @notice Returns the transfer amount of a motion
     ///
+    /// @param _accountId Account id
     /// @param _motionId The queried motion id
     function transferAmount(uint256 _accountId, uint256 _motionId) external view returns (uint256) {
         _basicChecks(_accountId, _motionId);
@@ -224,6 +230,7 @@ contract JointAccount {
 
     /// @notice Returns the relevant address of a motion
     ///
+    /// @param _accountId Account id
     /// @param _motionId The queried motion id
     function to(uint256 _accountId, uint256 _motionId) external view returns (address) {
         _basicChecks(_accountId, _motionId);
@@ -232,6 +239,7 @@ contract JointAccount {
 
     /// @notice Returns the proposed threshold of a motion
     ///
+    /// @param _accountId Account id
     /// @param _motionId The queried motion id
     function threshold(uint256 _accountId, uint256 _motionId) external view returns (uint256) {
         _basicChecks(_accountId, _motionId);
@@ -240,6 +248,7 @@ contract JointAccount {
 
     /// @notice Returns the proposer of a motion
     ///
+    /// @param _accountId Account id
     /// @param _motionId The queried motion id
     function proposer(uint256 _accountId, uint256 _motionId) external view returns (address) {
         _basicChecks(_accountId, _motionId);
@@ -248,6 +257,7 @@ contract JointAccount {
 
     /// @notice Returns the number of votes for a motion
     ///
+    /// @param _accountId Account id
     /// @param _motionId The queried motion id
     function voteCount(uint256 _accountId, uint256 _motionId) external view returns (uint256) {
         _basicChecks(_accountId, _motionId);
@@ -256,6 +266,7 @@ contract JointAccount {
 
     /// @notice Returns the number of votes for a motion
     ///
+    /// @param _accountId Account id
     /// @param _motionId The queried motion id
     function active(uint256 _accountId, uint256 _motionId) external view returns (bool) {
         _basicChecks(_accountId, _motionId);
@@ -264,6 +275,7 @@ contract JointAccount {
 
     /// @notice Returns true if a member voted for a motion
     ///
+    /// @param _accountId Account id
     /// @param _motionId The queried motion id
     /// @param _voter The queried member
     function voted(uint256 _accountId, uint256 _motionId, address _voter) external view returns (bool) {
@@ -273,11 +285,13 @@ contract JointAccount {
 
     // ===Motion Creation===
 
-    /// @notice Creates a new transfer motion
+    /// @notice Creates a new transfer motion to either an address or a joint account.
     ///
+    /// @param _accountId Account id
     /// @param _tokenId The token id of the transfer
     /// @param _transferAmount The amount to transfer
-    /// @param _to The address to transfer to
+    /// @param _to The address to transfer to. Must be NULL_ADDRESS if _destinationAccount is specified
+    /// @param _destinationAccount The account id to transfer to. Must be NULL if _to is specified
     function createTransferMotion(uint256 _accountId, vitetoken _tokenId, uint256 _transferAmount, address _to, uint256 _destinationAccount) external {
         _motionChecks(_accountId);
         require(balanceOf(_accountId, _tokenId) >= _transferAmount, "Insufficient balance");
@@ -292,6 +306,7 @@ contract JointAccount {
 
     /// @notice Creates a new add member motion
     ///
+    /// @param _accountId Account id
     /// @param _member The address to add
     function createAddMemberMotion(uint256 _accountId, address _member) external {
         _motionChecks(_accountId);
@@ -305,11 +320,11 @@ contract JointAccount {
 
     /// @notice Creates a new remove member motion
     ///
+    /// @param _accountId Account id
     /// @param _member The address to remove
     function createRemoveMemberMotion(uint256 _accountId, address _member) external {
         _motionChecks(_accountId);
         require(!accounts[_accountId].isStatic, "Cannot remove members from a static account");
-        require(isMember(_accountId, msg.sender), "Not a member");
         require(isMember(_accountId, _member), "Address is not a member");
         require(accounts[_accountId].approvalThreshold < accounts[_accountId].members.length, "Removing would make the threshold impossible to reach");
 
@@ -321,6 +336,7 @@ contract JointAccount {
 
     /// @notice Creates a new change threshold motion
     ///
+    /// @param _accountId Account id
     /// @param _threshold The new threshold
     ///
     /// @dev Note that it is possible to set the threshold to the current threshold
@@ -420,6 +436,9 @@ contract JointAccount {
 
     // ===Deposit===
 
+    /// @notice Deposits funds to a joint account. Can only be called by members
+    ///
+    /// @param _accountId Account id
     function deposit(uint256 _accountId) external payable {
         require(accountExists(_accountId), "Account does not exist");
         require(!accounts[_accountId].isMemberOnlyDeposit || isMember(_accountId, msg.sender), "Not a member");
@@ -433,6 +452,7 @@ contract JointAccount {
 
     /// @notice Votes on a motion
     ///
+    /// @param _accountId Account id
     /// @param _motionId The id of the motion to vote on
     function voteMotion(uint256 _accountId, uint256 _motionId) external {
         _motionChecks(_accountId);
@@ -443,6 +463,7 @@ contract JointAccount {
 
     /// @notice Cancels a vote on a motion
     ///
+    /// @param _accountId Account id
     /// @param _motionId The id of the motion to cancel the vote on
     function cancelVote(uint256 _accountId, uint256 _motionId) external {
         require(accountExists(_accountId), "Account does not exist");
@@ -457,6 +478,7 @@ contract JointAccount {
 
     /// @notice Cancels a motion
     ///
+    /// @param _accountId Account id
     /// @param _motionId The id of the motion to cancel
     function cancelMotion(uint256 _accountId, uint256 _motionId) external {
         require(accountExists(_accountId), "Account does not exist");

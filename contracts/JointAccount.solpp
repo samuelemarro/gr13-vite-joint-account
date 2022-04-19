@@ -103,7 +103,7 @@ contract JointAccount {
     
     JointSubAccount[] private accounts;
 
-    function createAccount(address[] memory _members, uint256 _approvalThreshold, bool _isStatic) external returns(uint256) {
+    function createAccount(address[] memory _members, uint256 _approvalThreshold, bool _isStatic, bool _isMemberOnlyDeposit) external returns(uint256) {
         require(_members.length > 0, "At least one member must be specified");
         require(_approvalThreshold > 0, "Approval threshold must be > 0");
         require(_approvalThreshold <= _members.length, "Approval threshold must be <= the number of members");
@@ -112,6 +112,7 @@ contract JointAccount {
         accounts[accounts.length - 1].members = _members;
         accounts[accounts.length - 1].approvalThreshold = _approvalThreshold;
         accounts[accounts.length - 1].isStatic = _isStatic;
+        accounts[accounts.length - 1].isMemberOnlyDeposit = _isMemberOnlyDeposit;
 
         emit AccountCreated(accounts.length - 1, msg.sender);
 

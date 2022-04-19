@@ -117,15 +117,24 @@ contract JointAccount {
         return accounts.length - 1;
     }
 
+    // ===Contract size helpers===
+
     // These functions help to reduce the contract size by avoiding the need to store the entire
     // revert messages for every function.
-    function _basicChecks(uint256 _accountId, uint256 _motionId) internal view {
+
+    function _accountCheck(uint256 _accountId) private view {
         require(accountExists(_accountId), "Account does not exist");
+    }
+
+    function _basicChecks(uint256 _accountId, uint256 _motionId) private view {
+        // Already handled by motionExists
+        // require(accountExists(_accountId), "Account does not exist");
         require(motionExists(_accountId, _motionId), "Motion does not exist");
     }
 
-    function _motionChecks(uint256 _accountId) internal view {
-        require(accountExists(_accountId), "Account does not exist");
+    function _motionChecks(uint256 _accountId) private view {
+        // Already handled by isMember
+        // require(accountExists(_accountId), "Account does not exist");
         require(isMember(_accountId, msg.sender), "Not a member");
     }
 
@@ -141,18 +150,18 @@ contract JointAccount {
     }
 
     function isStatic(uint256 _accountId) external view returns(bool) {
-        require(accountExists(_accountId), "Account does not exist");
+        _accountCheck(_accountId);
         return accounts[_accountId].isStatic;
     }
 
     function balanceOf(uint256 _accountId, vitetoken _tokenId) public view returns(uint256) {
-        require(accountExists(_accountId), "Account does not exist");
+        _accountCheck(_accountId);
         return balances[_accountId][_tokenId];
     }
 
     /// @notice Returns the current members
     function getMembers(uint256 _accountId) external view returns (address[] memory) {
-        require(accountExists(_accountId), "Account does not exist");
+        _accountCheck(_accountId);
         return accounts[_accountId].members;
     }
 
@@ -291,7 +300,7 @@ contract JointAccount {
     ///
     /// @param _member The address to remove
     function createRemoveMemberMotion(uint256 _accountId, address _member) external {
-        require(accountExists(_accountId), "Account does not exist");
+        _motionChecks(_accountId);
         require(!accounts[_accountId].isStatic, "Cannot remove members from a static account");
         require(isMember(_accountId, msg.sender), "Not a member");
         require(isMember(_accountId, _member), "Address is not a member");
@@ -419,8 +428,7 @@ contract JointAccount {
     ///
     /// @param _motionId The id of the motion to vote on
     function voteMotion(uint256 _accountId, uint256 _motionId) external {
-        require(accountExists(_accountId), "Account does not exist");
-        require(isMember(_accountId, msg.sender), "Not a member");
+        _motionChecks(_accountId);
         require(accounts[_accountId].motions[_motionId].active, "Motion is not active");
         require(!votes[_accountId][_motionId][msg.sender] || accounts[_accountId].motions[_motionId].voteCount >= accounts[_accountId].approvalThreshold, "Already voted on this motion");
         _voteMotion(_accountId, _motionId);

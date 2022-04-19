@@ -178,6 +178,58 @@ describe('test JointAccount', function () {
             ]);
         });
     })
+
+    describe('deposit', function() {
+        it('deposits to an account', async function() {
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
+
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});
+            await waitForContractReceive(testTokenId);
+
+            const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
+            checkEvents(events, [
+                {
+                    '0': '0', accountId: '0',
+                    '1': alice.address, creator: alice.address
+                }, // Account created
+                {
+                    '0': '0', accountId: '0',
+                    '1': testFullId(), tokenId: testFullId(),
+                    '2': alice.address, from: alice.address,
+                    '3': '1000000', amount: '1000000'
+                } // Alice deposits
+            ]);
+        });
+
+        it('deposits as a non-member to a regular account', async function() {
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
+
+            await deployer.sendToken(charlie.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: charlie, amount: '1000000', tokenId: testTokenId});
+            await waitForContractReceive(testTokenId);
+        });
+
+        it('fails to deposit to a non-existent account', async function() {
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+
+            expect(
+                contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId})
+            ).to.be.eventually.rejectedWith('revert');
+        });
+
+        it('fails to deposit as a non-member to a member-only deposit account', async function() {
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
+
+            await deployer.sendToken(charlie.address, '1000000', testTokenId);
+            await alice.receiveAll();
+
+            expect(
+                contract.call('deposit', [0], {caller: charlie, amount: '1000000', tokenId: testTokenId})
+            ).to.be.eventually.rejectedWith('revert');
         });
     })
 

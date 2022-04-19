@@ -128,6 +128,14 @@ describe('test JointAccount', function () {
             expect(await contract.query('isMemberOnlyDeposit', [0])).to.be.deep.equal(['0']);
             expect(await contract.query('getMembers', [0])).to.be.deep.equal([[alice.address, bob.address]]);
             expect(await contract.query('approvalThreshold', [0])).to.be.deep.equal(['1']);
+
+            const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
+            checkEvents(events, [
+                {
+                    '0': '0', accountId: '0',
+                    '1': alice.address, creator: alice.address
+                } // Account created
+            ]);
         });
 
         it('creates an account with as many members as required votes', async function() {
@@ -139,6 +147,14 @@ describe('test JointAccount', function () {
             expect(await contract.query('getMembers', [0])).to.be.deep.equal([[alice.address, bob.address]]);
             expect(await contract.query('approvalThreshold', [0])).to.be.deep.equal(['2']);
             // expect(await contract.query('memberCount', [0, ])).to.be.deep.equal(['2']);
+
+            const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
+            checkEvents(events, [
+                {
+                    '0': '0', accountId: '0',
+                    '1': alice.address, creator: alice.address
+                } // Account created
+            ]);
         });
 
         it('creates two accounts', async function() {
@@ -148,6 +164,20 @@ describe('test JointAccount', function () {
             expect(await contract.query('accountExists', [0])).to.be.deep.equal(['1']);
             expect(await contract.query('accountExists', [1])).to.be.deep.equal(['1']);
             expect(await contract.query('accountExists', [2])).to.be.deep.equal(['0']);
+
+            const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
+            checkEvents(events, [
+                {
+                    '0': '0', accountId: '0',
+                    '1': alice.address, creator: alice.address
+                }, // Account created
+                {
+                    '0': '1', accountId: '1',
+                    '1': alice.address, creator: alice.address
+                } // Account created
+            ]);
+        });
+    })
         });
     })
 

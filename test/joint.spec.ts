@@ -873,7 +873,8 @@ describe('test JointAccount', function () {
                     '1': '0', motionId: '0',
                     '2': testFullId(), tokenId: testFullId(),
                     '3': charlie.address, to: charlie.address,
-                    '4': '50', amount: '50'
+                    '4': NULL, destinationAccount: NULL,
+                    '5': '50', amount: '50'
                 } // Transfer is executed
             ]);
         });
@@ -1025,7 +1026,8 @@ describe('test JointAccount', function () {
                     '1': '0', motionId: '0',
                     '2': testFullId(), tokenId: testFullId(),
                     '3': charlie.address, to: charlie.address,
-                    '4': '50', amount: '50'
+                    '4': NULL, destinationAccount: NULL,
+                    '5': '50', amount: '50'
                 } // Transfer is executed
             ]);
         });

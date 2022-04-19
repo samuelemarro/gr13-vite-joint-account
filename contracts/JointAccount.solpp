@@ -259,6 +259,15 @@ contract JointAccount {
         return accounts[_accountId].motions[_motionId].to;
     }
 
+    /// @notice Returns the destination account of a motion
+    ///
+    /// @param _accountId Account id
+    /// @param _motionId The queried motion id
+    function destinationAccount(uint256 _accountId, uint256 _motionId) external view returns (uint256) {
+        _basicChecks(_accountId, _motionId);
+        return accounts[_accountId].motions[_motionId].destinationAccount;
+    }
+
     /// @notice Returns the proposed threshold of a motion
     ///
     /// @param _accountId Account id

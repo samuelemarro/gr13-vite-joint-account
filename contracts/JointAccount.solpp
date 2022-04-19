@@ -322,6 +322,12 @@ contract JointAccount {
         require(_to != NULL_ADDRESS || _destinationAccount != NULL, "Address or destination account must be specified");
         require(_to == NULL_ADDRESS || _destinationAccount == NULL, "Cannot specify both address and destination account");
 
+        if (_destinationAccount != NULL) {
+            // Account existence check is handled by isMember
+            // isMember is first due to the short-circuit behaviour of Solidity's || operator
+            require(isMember(_destinationAccount, msg.sender) || !accounts[_destinationAccount].isMemberOnlyDeposit, "Not a member");
+        }
+
         emit MotionCreated(_accountId, accounts[_accountId].motions.length - 1, uint256(MotionType.TRANSFER), msg.sender, _tokenId, _transferAmount, _to, _destinationAccount, NULL);
         _voteMotion(_accountId, accounts[_accountId].motions.length - 1);
     }
@@ -462,8 +468,10 @@ contract JointAccount {
     ///
     /// @param _accountId Account id
     function deposit(uint256 _accountId) external payable {
-        require(accountExists(_accountId), "Account does not exist");
-        require(!accounts[_accountId].isMemberOnlyDeposit || isMember(_accountId, msg.sender), "Not a member");
+        // Already handled by isMember
+        // require(accountExists(_accountId), "Account does not exist");
+        // isMember is first due to the short-circuit behaviour of Solidity's || operator
+        require(isMember(_accountId, msg.sender) || !accounts[_accountId].isMemberOnlyDeposit, "Not a member");
 
         balances[_accountId][msg.token] += msg.value;
 
@@ -503,7 +511,7 @@ contract JointAccount {
     /// @param _accountId Account id
     /// @param _motionId The id of the motion to cancel
     function cancelMotion(uint256 _accountId, uint256 _motionId) external {
-        require(accountExists(_accountId), "Account does not exist");
+        _motionChecks(_accountId);
         require(isMember(_accountId, msg.sender), "Not a member");
         require(accounts[_accountId].motions[_motionId].active, "Motion is not active");
         require(accounts[_accountId].motions[_motionId].proposer == msg.sender, "You are not the proposer of this motion");

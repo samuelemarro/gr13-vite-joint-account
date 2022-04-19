@@ -150,6 +150,12 @@ contract JointAccount {
         require(balanceOf(_accountId, _tokenId) >= _transferAmount, "Insufficient balance");
     }
 
+    function _destinationAccountCheck(uint256 _destinationAccount, address _proposer) private view {
+        // Account existence check is handled by isMember
+        // isMember is first due to the short-circuit behaviour of Solidity's || operator
+        require(isMember(_destinationAccount, _proposer) || !accounts[_destinationAccount].isMemberOnlyDeposit, "Not a member");
+    }
+
     // ===Getters===
 
     /// @notice Returns true if an account exists
@@ -336,9 +342,7 @@ contract JointAccount {
         require(_to == NULL_ADDRESS || _destinationAccount == NULL, "Cannot specify both address & destination account");
 
         if (_destinationAccount != NULL) {
-            // Account existence check is handled by isMember
-            // isMember is first due to the short-circuit behaviour of Solidity's || operator
-            require(isMember(_destinationAccount, msg.sender) || !accounts[_destinationAccount].isMemberOnlyDeposit, "Not a member");
+            _destinationAccountCheck(_destinationAccount, msg.sender);
         }
 
         emit MotionCreated(_accountId, accounts[_accountId].motions.length - 1, uint256(MotionType.TRANSFER), msg.sender, _tokenId, _transferAmount, _to, _destinationAccount, NULL);
@@ -351,7 +355,7 @@ contract JointAccount {
     /// @param _member The address to add
     function createAddMemberMotion(uint256 _accountId, address _member) external {
         _motionChecks(_accountId);
-        require(!accounts[_accountId].isStatic, "Cannot add members to a static account");
+        require(!accounts[_accountId].isStatic, "Account is static");
         require(!isMember(_accountId, _member), "Address is already a member");
         accounts[_accountId].motions.push(Motion(MotionType.ADD_MEMBER, NULL_TOKEN, NULL, _member, NULL, NULL, msg.sender, 0, true));
 
@@ -365,7 +369,7 @@ contract JointAccount {
     /// @param _member The address to remove
     function createRemoveMemberMotion(uint256 _accountId, address _member) external {
         _motionChecks(_accountId);
-        require(!accounts[_accountId].isStatic, "Cannot remove members from a static account");
+        require(!accounts[_accountId].isStatic, "Account is static");
         require(isMember(_accountId, _member), "Address is not a member");
         require(accounts[_accountId].approvalThreshold < accounts[_accountId].members.length, "Removing would make the threshold impossible to reach");
 
@@ -383,7 +387,7 @@ contract JointAccount {
     /// @dev Note that it is possible to set the threshold to the current threshold
     function createChangeThresholdMotion(uint256 _accountId, uint256 _threshold) external {
         _motionChecks(_accountId);
-        require(!accounts[_accountId].isStatic, "Cannot change the threshold of a static account");
+        require(!accounts[_accountId].isStatic, "Account is static");
         require(_threshold > 0, "Threshold must be > 0");
         require(_threshold <= accounts[_accountId].members.length, "Threshold too high");
 
@@ -393,12 +397,13 @@ contract JointAccount {
         _voteMotion(_accountId, accounts[_accountId].motions.length - 1);
     }
 
-    function _transfer(uint256 _accountId, uint256 _motionId, vitetoken _tokenId, uint256 _transferAmount, address _to, uint256 _destinationAccount) internal {
+    function _transfer(uint256 _accountId, uint256 _motionId, vitetoken _tokenId, uint256 _transferAmount, address _to, uint256 _destinationAccount, address _proposer) internal {
         _balanceCheck(_accountId, _tokenId, _transferAmount);
         balances[_accountId][_tokenId] -= _transferAmount;
 
         if (_to == NULL_ADDRESS) {
             // Transfer to another joint account
+            _destinationAccountCheck(_destinationAccount, _proposer);
             balances[_destinationAccount][_tokenId] += _transferAmount;
         } else {
             payable(_to).transfer(_tokenId, _transferAmount);
@@ -434,7 +439,7 @@ contract JointAccount {
         require(accounts[_accountId].approvalThreshold < accounts[_accountId].members.length, "Removing would make the threshold too high");
 
         uint256 index = _findMember(_accountId, _member);
-        require(index != NULL, "Address is not a member");
+        require(isMember(_accountId, _member), "Address is not a member");
 
         for (uint256 i = index; i < accounts[_accountId].members.length - 1; i++) {
             accounts[_accountId].members[i] = accounts[_accountId].members[i + 1];
@@ -464,7 +469,7 @@ contract JointAccount {
 
             // Note: Solidity doesn't have switch statements
             if (accounts[_accountId].motions[_motionId].motionType == MotionType.TRANSFER) {
-                _transfer(_accountId, _motionId, accounts[_accountId].motions[_motionId].tokenId, accounts[_accountId].motions[_motionId].transferAmount, accounts[_accountId].motions[_motionId].to, accounts[_accountId].motions[_motionId].destinationAccount);
+                _transfer(_accountId, _motionId, accounts[_accountId].motions[_motionId].tokenId, accounts[_accountId].motions[_motionId].transferAmount, accounts[_accountId].motions[_motionId].to, accounts[_accountId].motions[_motionId].destinationAccount, accounts[_accountId].motions[_motionId].proposer);
             } else if (accounts[_accountId].motions[_motionId].motionType == MotionType.ADD_MEMBER) {
                 _addMember(_accountId, _motionId, accounts[_accountId].motions[_motionId].to);
             } else if (accounts[_accountId].motions[_motionId].motionType == MotionType.REMOVE_MEMBER) {

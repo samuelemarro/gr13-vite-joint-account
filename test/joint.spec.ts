@@ -209,7 +209,7 @@ describe('test JointAccount', function () {
             await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
 
             await deployer.sendToken(charlie.address, '1000000', testTokenId);
-            await alice.receiveAll();
+            await charlie.receiveAll();
             await contract.call('deposit', [0], {caller: charlie, amount: '1000000', tokenId: testTokenId});
             await waitForContractReceive(testTokenId);
 
@@ -240,10 +240,10 @@ describe('test JointAccount', function () {
         });
 
         it('fails to deposit as a non-member to a member-only deposit account', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 1], {caller: alice});
 
             await deployer.sendToken(charlie.address, '1000000', testTokenId);
-            await alice.receiveAll();
+            await charlie.receiveAll();
 
             expect(
                 contract.call('deposit', [0], {caller: charlie, amount: '1000000', tokenId: testTokenId})

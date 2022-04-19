@@ -598,7 +598,7 @@ describe('test JointAccount', function () {
             await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
-            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address], {caller: alice})
+            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address, NULL], {caller: alice})
 
             // Remove Charlie
             await contract.call('createRemoveMemberMotion', [0, charlie.address], {caller: alice});
@@ -635,7 +635,7 @@ describe('test JointAccount', function () {
             await contract.call('createRemoveMemberMotion', [0, charlie.address], {caller: alice});
 
             // Second motion. Again this one can be created
-            await contract.call('createRemoveMemberMotion', 0, [charlie.address], {caller: alice})
+            await contract.call('createRemoveMemberMotion', [0, charlie.address], {caller: alice})
 
             // First motion is approved, Charlie is no longer a member
             await contract.call('voteMotion', [0, '0'], {caller: bob});
@@ -791,7 +791,7 @@ describe('test JointAccount', function () {
             await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
-            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address], {caller: alice});
+            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address, NULL], {caller: alice});
 
             // Lower the threshold
             await contract.call('createChangeThresholdMotion', [0, 1], {caller: alice});
@@ -941,7 +941,7 @@ describe('test JointAccount', function () {
             await waitForContractReceive(testTokenId);
 
             // Alice votes yes as part of the motion creation process
-            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address], {caller: alice});
+            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address, NULL], {caller: alice});
 
             expect(await contract.query('voteCount', [0, 0])).to.be.deep.equal(['1']);
             expect(await contract.query('voted', [0, 0, alice.address])).to.be.deep.equal(['1']);
@@ -1038,7 +1038,7 @@ describe('test JointAccount', function () {
             await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
-            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address], {caller: alice});
+            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address, NULL], {caller: alice});
             await charlie.receiveAll();
 
             await contract.call('cancelVote', [0, 0], {caller: alice});
@@ -1056,7 +1056,7 @@ describe('test JointAccount', function () {
             await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
-            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address], {caller: alice});
+            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address, NULL], {caller: alice});
             await charlie.receiveAll();
 
             await contract.call('voteMotion', [0, 0], {caller: bob});
@@ -1076,7 +1076,7 @@ describe('test JointAccount', function () {
             await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
-            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address], {caller: alice});
+            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address, NULL], {caller: alice});
             await charlie.receiveAll();
 
             expect(
@@ -1094,7 +1094,7 @@ describe('test JointAccount', function () {
             await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
-            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address], {caller: alice});
+            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address, NULL], {caller: alice});
             await charlie.receiveAll();
 
             await contract.call('cancelMotion', [0, 0], {caller: alice});
@@ -1145,7 +1145,7 @@ describe('test JointAccount', function () {
             await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
-            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address], {caller: alice});
+            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address, NULL], {caller: alice});
 
             await contract.call('voteMotion', [0, 0], {caller: bob})
             await charlie.receiveAll();
@@ -1163,7 +1163,7 @@ describe('test JointAccount', function () {
             await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
-            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address], {caller: alice});
+            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address, NULL], {caller: alice});
 
             await contract.call('cancelMotion', [0, 0], {caller: alice});
 
@@ -1183,7 +1183,7 @@ describe('test JointAccount', function () {
             await waitForContractReceive(testTokenId);
 
             expect(
-                contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address], {caller: charlie})
+                contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address, NULL], {caller: charlie})
             ).to.eventually.be.rejectedWith('revert');
         });
 
@@ -1203,7 +1203,7 @@ describe('test JointAccount', function () {
             await contract.call('deposit', [0, 0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
-            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address], {caller: alice});
+            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address, NULL], {caller: alice});
             await charlie.receiveAll();
 
             expect(
@@ -1219,7 +1219,7 @@ describe('test JointAccount', function () {
             await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
-            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address], {caller: alice});
+            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address, NULL], {caller: alice});
             await charlie.receiveAll();
 
             expect(
@@ -1235,7 +1235,7 @@ describe('test JointAccount', function () {
             await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
-            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address], {caller: alice});
+            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address, NULL], {caller: alice});
             await charlie.receiveAll();
 
             await contract.call('voteMotion', [0, 0], {caller: bob})
@@ -1253,7 +1253,7 @@ describe('test JointAccount', function () {
             await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
             await waitForContractReceive(testTokenId);
 
-            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address], {caller: alice});
+            await contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address, NULL], {caller: alice});
             await charlie.receiveAll();
 
             expect(

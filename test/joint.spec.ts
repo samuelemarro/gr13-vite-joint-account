@@ -188,6 +188,8 @@ describe('test JointAccount', function () {
             await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});
             await waitForContractReceive(testTokenId);
 
+            expect(await contract.query('balanceOf', [0, testTokenId])).to.be.deep.equal(['1000000']);
+
             const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
             checkEvents(events, [
                 {
@@ -210,6 +212,22 @@ describe('test JointAccount', function () {
             await alice.receiveAll();
             await contract.call('deposit', [0], {caller: charlie, amount: '1000000', tokenId: testTokenId});
             await waitForContractReceive(testTokenId);
+
+            expect(await contract.query('balanceOf', [0, testTokenId])).to.be.deep.equal(['1000000']);
+
+            const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
+            checkEvents(events, [
+                {
+                    '0': '0', accountId: '0',
+                    '1': alice.address, creator: alice.address
+                }, // Account created
+                {
+                    '0': '0', accountId: '0',
+                    '1': testFullId(), tokenId: testFullId(),
+                    '2': charlie.address, from: charlie.address,
+                    '3': '1000000', amount: '1000000'
+                } // Charlie deposits
+            ]);
         });
 
         it('fails to deposit to a non-existent account', async function() {
@@ -411,6 +429,351 @@ describe('test JointAccount', function () {
             expect(
                 contract.call('voteMotion', [0, 1], {caller: bob})
             ).to.eventually.be.rejectedWith('revert');
+        });
+    })
+
+    describe('internal transfer motion', function() {
+        it('creates and votes an internal transfer motion', async function() {
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, charlie.address], 2, 1, 0], {caller: alice});
+
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});
+            await waitForContractReceive(testTokenId);
+
+            await contract.call('createTransferMotion', [0, testTokenId, '50', NULL_ADDRESS, '1'], {caller: alice});
+            await charlie.receiveAll();
+
+            expect(await contract.query('motionExists', [0, 0])).to.be.deep.equal(['1']);
+            expect(await contract.query('motionType', [0, 0])).to.be.deep.equal(['0']);
+            expect(await contract.query('tokenId', [0, 0])).to.be.deep.equal([testTokenId]);
+            expect(await contract.query('transferAmount', [0, 0])).to.be.deep.equal(['50']);
+            expect(await contract.query('to', [0, 0])).to.be.deep.equal([NULL_ADDRESS]);
+            expect(await contract.query('destinationAccount', [0, 0])).to.be.deep.equal(['1']);
+            expect(await contract.query('threshold', [0, 0])).to.be.deep.equal([NULL]);
+            expect(await contract.query('proposer', [0, 0])).to.be.deep.equal([alice.address]);
+            expect(await contract.query('voteCount', [0, 0])).to.be.deep.equal(['1']);
+            expect(await contract.query('active', [0, 0])).to.be.deep.equal(['1']);
+
+            expect(await contract.query('voted', [0, 0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, 0, bob.address])).to.be.deep.equal(['0']);
+
+            // Motion hasn't been approved yet
+            expect(await contract.balance(testTokenId)).to.be.deep.equal('1000000');
+            expect(await contract.query('balanceOf', [0, testTokenId])).to.be.deep.equal(['1000000']);
+            expect(await contract.query('balanceOf', [1, testTokenId])).to.be.deep.equal(['0']);
+
+            await contract.call('voteMotion', [0, '0'], {caller: bob});
+            await charlie.receiveAll();
+
+            expect(await contract.query('voteCount', [0, 0])).to.be.deep.equal(['2']);
+            expect(await contract.query('active', [0, 0])).to.be.deep.equal(['0']);
+
+            expect(await contract.query('voted', [0, 0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, 0, bob.address])).to.be.deep.equal(['1']);
+
+            // Motion was approved
+            // Contract's balance didn't change
+            expect(await contract.balance(testTokenId)).to.be.deep.equal('1000000');
+            expect(await contract.query('balanceOf', [0, testTokenId])).to.be.deep.equal(['999950']);
+            expect(await contract.query('balanceOf', [1, testTokenId])).to.be.deep.equal(['50']);
+
+            const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
+            checkEvents(events, [
+                {
+                    '0': '0', accountId: '0',
+                    '1': alice.address, creator: alice.address
+                }, // Account created
+                {
+                    '0': '1', accountId: '1',
+                    '1': alice.address, creator: alice.address
+                }, // Account created
+                {
+                    '0': '0', accountId: '0',
+                    '1': testFullId(), tokenId: testFullId(),
+                    '2': alice.address, from: alice.address,
+                    '3': '1000000', amount: '1000000'
+                }, // Alice deposits
+                {
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': '0', motionType: '0',
+                    '3': alice.address, proposer: alice.address,
+                    '4': testTokenId, tokenId: testTokenId,
+                    '5': '50', transferAmount: '50',
+                    '6': NULL_ADDRESS, to: NULL_ADDRESS,
+                    '7': '1', destinationAccount: '1',
+                    '8': NULL, threshold: NULL
+                }, // Motion created
+                {
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': alice.address, voter: alice.address,
+                    '3': '1', vote: '1'
+                }, // Alice votes yes
+                {
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': bob.address, voter: bob.address,
+                    '3': '1', vote: '1'
+                }, // Bob votes yes
+                {
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': testFullId(), tokenId: testFullId(),
+                    '3': NULL_ADDRESS, to: NULL_ADDRESS,
+                    '4': '1', destinationAccount: '1',
+                    '5': '50', amount: '50'
+                } // Transfer is executed
+            ]);
+        });
+
+        it('creates and immediately approves an internal transfer motion', async function() {
+            await contract.call('createAccount', [[alice.address, bob.address], 1, 1, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, charlie.address], 2, 1, 0], {caller: alice});
+
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
+            await waitForContractReceive(testTokenId);
+
+            await contract.call('createTransferMotion', [0, testTokenId, '50', NULL_ADDRESS, '1'], {caller: alice});
+
+            // Motion was approved
+            expect(await contract.balance(testTokenId)).to.be.deep.equal('1000000');
+            expect(await contract.query('balanceOf', [0, testTokenId])).to.be.deep.equal(['999950']);
+            expect(await contract.query('balanceOf', [1, testTokenId])).to.be.deep.equal(['50']);
+
+            const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
+            checkEvents(events, [
+                {
+                    '0': '0', accountId: '0',
+                    '1': alice.address, creator: alice.address
+                }, // Account created
+                {
+                    '0': '1', accountId: '1',
+                    '1': alice.address, creator: alice.address
+                }, // Account created
+                {
+                    '0': '0', accountId: '0',
+                    '1': testFullId(), tokenId: testFullId(),
+                    '2': alice.address, from: alice.address,
+                    '3': '1000000', amount: '1000000'
+                }, // Alice deposits
+                {
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': '0', motionType: '0',
+                    '3': alice.address, proposer: alice.address,
+                    '4': testTokenId, tokenId: testTokenId,
+                    '5': '50', transferAmount: '50',
+                    '6': NULL_ADDRESS, to: NULL_ADDRESS,
+                    '7': '1', destinationAccount: '1',
+                    '8': NULL, threshold: NULL
+                }, // Motion created
+                {
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': alice.address, voter: alice.address,
+                    '3': '1', vote: '1'
+                }, // Alice votes yes
+                {
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': testFullId(), tokenId: testFullId(),
+                    '3': NULL_ADDRESS, to: NULL_ADDRESS,
+                    '4': '1', destinationAccount: '1',
+                    '5': '50', amount: '50'
+                } // Transfer is executed
+            ]);
+        });
+
+        it('creates and votes an internal transfer motion to a regular account without being a member', async function() {
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, charlie.address], 2, 1, 0], {caller: alice});
+
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});
+            await waitForContractReceive(testTokenId);
+
+            await contract.call('createTransferMotion', [0, testTokenId, '50', NULL_ADDRESS, '1'], {caller: bob});
+            await charlie.receiveAll();
+
+            expect(await contract.query('motionExists', [0, 0])).to.be.deep.equal(['1']);
+            expect(await contract.query('motionType', [0, 0])).to.be.deep.equal(['0']);
+            expect(await contract.query('tokenId', [0, 0])).to.be.deep.equal([testTokenId]);
+            expect(await contract.query('transferAmount', [0, 0])).to.be.deep.equal(['50']);
+            expect(await contract.query('to', [0, 0])).to.be.deep.equal([NULL_ADDRESS]);
+            expect(await contract.query('destinationAccount', [0, 0])).to.be.deep.equal(['1']);
+            expect(await contract.query('threshold', [0, 0])).to.be.deep.equal([NULL]);
+            expect(await contract.query('proposer', [0, 0])).to.be.deep.equal([bob.address]);
+            expect(await contract.query('voteCount', [0, 0])).to.be.deep.equal(['1']);
+            expect(await contract.query('active', [0, 0])).to.be.deep.equal(['1']);
+
+            expect(await contract.query('voted', [0, 0, alice.address])).to.be.deep.equal(['0']);
+            expect(await contract.query('voted', [0, 0, bob.address])).to.be.deep.equal(['1']);
+
+            // Motion hasn't been approved yet
+            expect(await contract.balance(testTokenId)).to.be.deep.equal('1000000');
+            expect(await contract.query('balanceOf', [0, testTokenId])).to.be.deep.equal(['1000000']);
+            expect(await contract.query('balanceOf', [1, testTokenId])).to.be.deep.equal(['0']);
+
+            await contract.call('voteMotion', [0, '0'], {caller: alice});
+            await charlie.receiveAll();
+
+            expect(await contract.query('voteCount', [0, 0])).to.be.deep.equal(['2']);
+            expect(await contract.query('active', [0, 0])).to.be.deep.equal(['0']);
+
+            expect(await contract.query('voted', [0, 0, alice.address])).to.be.deep.equal(['1']);
+            expect(await contract.query('voted', [0, 0, bob.address])).to.be.deep.equal(['1']);
+
+            // Motion was approved
+            // Contract's balance didn't change
+            expect(await contract.balance(testTokenId)).to.be.deep.equal('1000000');
+            expect(await contract.query('balanceOf', [0, testTokenId])).to.be.deep.equal(['999950']);
+            expect(await contract.query('balanceOf', [1, testTokenId])).to.be.deep.equal(['50']);
+
+            const events = await contract.getPastEvents('allEvents', {fromHeight: 0, toHeight: 100});
+            checkEvents(events, [
+                {
+                    '0': '0', accountId: '0',
+                    '1': alice.address, creator: alice.address
+                }, // Account created
+                {
+                    '0': '1', accountId: '1',
+                    '1': alice.address, creator: alice.address
+                }, // Account created
+                {
+                    '0': '0', accountId: '0',
+                    '1': testFullId(), tokenId: testFullId(),
+                    '2': alice.address, from: alice.address,
+                    '3': '1000000', amount: '1000000'
+                }, // Alice deposits
+                {
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': '0', motionType: '0',
+                    '3': bob.address, proposer: bob.address,
+                    '4': testTokenId, tokenId: testTokenId,
+                    '5': '50', transferAmount: '50',
+                    '6': NULL_ADDRESS, to: NULL_ADDRESS,
+                    '7': '1', destinationAccount: '1',
+                    '8': NULL, threshold: NULL
+                }, // Motion created
+                {
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': bob.address, voter: bob.address,
+                    '3': '1', vote: '1'
+                }, // Bob votes yes
+                {
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': alice.address, voter: alice.address,
+                    '3': '1', vote: '1'
+                }, // Alice votes yes
+                {
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': testFullId(), tokenId: testFullId(),
+                    '3': NULL_ADDRESS, to: NULL_ADDRESS,
+                    '4': '1', destinationAccount: '1',
+                    '5': '50', amount: '50'
+                } // Transfer is executed
+            ]);
+        });
+
+        it('fails to create an internal transfer motion without enough funds', async function() {
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, charlie.address], 2, 1, 0], {caller: alice});
+
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
+            await waitForContractReceive(testTokenId);
+
+            expect(
+                contract.call('createTransferMotion', [0, testTokenId, '1000001', NULL_ADDRESS, '1'], {caller: alice})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+
+        it('fails to create an internal transfer motion without enough account-specific funds', async function() {
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, charlie.address], 2, 1, 0], {caller: alice});
+
+            await deployer.sendToken(alice.address, '1000001', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});
+            await contract.call('deposit', [1], {caller: alice, amount: '1', tokenId: testTokenId});
+            await waitForContractReceive(testTokenId);
+
+            // There is enough money, but it's split between accounts
+            expect(await contract.balance(testTokenId)).to.be.deep.equal('1000001');
+            expect(await contract.query('balanceOf', [0, testTokenId])).to.be.deep.equal(['1000000'])
+            expect(await contract.query('balanceOf', [1, testTokenId])).to.be.deep.equal(['1'])
+
+            expect(
+                contract.call('createTransferMotion', [0, testTokenId, '1000001', NULL_ADDRESS, '1'], {caller: alice})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+
+        it('fails to execute an internal transfer motion due to not having enough funds', async function() {
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, charlie.address], 2, 1, 0], {caller: alice});
+
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
+            await waitForContractReceive(testTokenId);
+
+            // First motion. Since there are enough funds, it can be created
+            await contract.call('createTransferMotion', [0, testTokenId, '1000000', NULL_ADDRESS, '1'], {caller: alice});
+
+            // Second motion. Again this one can be created
+            await contract.call('createTransferMotion', [0, testTokenId, '1000000', NULL_ADDRESS, '1'], {caller: alice});
+
+            // First motion is approved, account balance is now 0
+            await contract.call('voteMotion', [0, '0'], {caller: bob});
+            expect(await contract.balance(testTokenId)).to.be.deep.equal('1000000');
+            expect(await contract.query('balanceOf', [0, testTokenId])).to.be.deep.equal(['0']);
+            expect(await contract.query('balanceOf', [1, testTokenId])).to.be.deep.equal(['1000000'])
+
+            expect(await contract.query('voteCount', [0, 1])).to.be.deep.equal(['1']);
+
+            // Second motion is voted, fails
+            expect(
+                contract.call('voteMotion', [0, 1], {caller: bob})
+            ).to.eventually.be.rejectedWith('revert');
+        });
+
+        it('fails to create an internal transfer motion to a non-existent account', async function() {
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
+
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
+            await waitForContractReceive(testTokenId);
+
+            expect(
+                contract.call('createTransferMotion', [0, testTokenId, '1000000', NULL_ADDRESS, '1'], {caller: alice})
+            ).to.be.eventually.rejectedWith('revert');
+        });
+
+        it('fails to create an internal transfer motion to a member-only deposit account without being a member', async function() {
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, charlie.address], 2, 1, 1], {caller: alice});
+
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
+            await waitForContractReceive(testTokenId);
+
+            // Bob isn't a member of the second account
+            expect(
+                contract.call('createTransferMotion', [0, testTokenId, '1000000', NULL_ADDRESS, '1'], {caller: bob})
+            ).to.be.eventually.rejectedWith('revert');
         });
     })
 

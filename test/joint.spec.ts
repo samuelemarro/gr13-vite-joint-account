@@ -360,32 +360,31 @@ describe('test JointAccount', function () {
                 }, // Account created
                 {
                     '0': '0', accountId: '0',
-                    '1': testFullId(), tokenId: testFullId(),
-                    '2': alice.address, from: alice.address,
-                    '3': '1000000', amount: '1000000'
-                }, // Alice deposits
-                {
-                    '0': '0', motionId: '0',
-                    '1': '1', motionType: '1',
-                    '2': alice.address, proposer: alice.address,
-                    '3': NULL_TOKEN, tokenId: NULL_TOKEN,
-                    '4': NULL, transferAmount: NULL,
-                    '5': charlie.address, to: charlie.address,
-                    '6': NULL, threshold: NULL
+                    '1': '0', motionId: '0',
+                    '2': '1', motionType: '1',
+                    '3': alice.address, proposer: alice.address,
+                    '4': NULL_TOKEN, tokenId: NULL_TOKEN,
+                    '5': NULL, transferAmount: NULL,
+                    '6': charlie.address, to: charlie.address,
+                    '7': NULL, destinationAccount: NULL,
+                    '8': NULL, threshold: NULL
                 }, // Motion created
                 {
-                    '0': '0', motionId: '0',
-                    '1': alice.address, voter: alice.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': alice.address, voter: alice.address,
+                    '3': '1', vote: '1'
                 }, // Alice votes yes
                 {
-                    '0': '0', motionId: '0',
-                    '1': bob.address, voter: bob.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': bob.address, voter: bob.address,
+                    '3': '1', vote: '1'
                 }, // Bob votes yes
                 {
-                    '0': '0', motionId: '0',
-                    '1': charlie.address, member: charlie.address
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': charlie.address, member: charlie.address
                 } // Charlie is added
             ]);
         });
@@ -417,22 +416,26 @@ describe('test JointAccount', function () {
                     '3': '1000000', amount: '1000000'
                 }, // Alice deposits
                 {
-                    '0': '0', motionId: '0',
-                    '1': '1', motionType: '1',
-                    '2': alice.address, proposer: alice.address,
-                    '3': NULL_TOKEN, tokenId: NULL_TOKEN,
-                    '4': NULL, transferAmount: NULL,
-                    '5': charlie.address, to: charlie.address,
-                    '6': NULL, threshold: NULL
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': '1', motionType: '1',
+                    '3': alice.address, proposer: alice.address,
+                    '4': NULL_TOKEN, tokenId: NULL_TOKEN,
+                    '5': NULL, transferAmount: NULL,
+                    '6': charlie.address, to: charlie.address,
+                    '7': NULL, destinationAccount: NULL,
+                    '8': NULL, threshold: NULL
                 }, // Motion created
                 {
-                    '0': '0', motionId: '0',
-                    '1': alice.address, voter: alice.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': alice.address, voter: alice.address,
+                    '3': '1', vote: '1'
                 }, // Alice votes yes
                 {
-                    '0': '0', motionId: '0',
-                    '1': charlie.address, member: charlie.address
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': charlie.address, member: charlie.address
                 } // Charlie is added
             ]);
         });
@@ -518,32 +521,31 @@ describe('test JointAccount', function () {
                 }, // Account created
                 {
                     '0': '0', accountId: '0',
-                    '1': testFullId(), tokenId: testFullId(),
-                    '2': alice.address, from: alice.address,
-                    '3': '1000000', amount: '1000000'
-                }, // Alice deposits
-                {
-                    '0': '0', motionId: '0',
-                    '1': '2', motionType: '2',
-                    '2': alice.address, proposer: alice.address,
-                    '3': NULL_TOKEN, tokenId: NULL_TOKEN,
-                    '4': NULL, transferAmount: NULL,
-                    '5': charlie.address, to: charlie.address,
-                    '6': NULL, threshold: NULL
+                    '1': '0', motionId: '0',
+                    '2': '2', motionType: '2',
+                    '3': alice.address, proposer: alice.address,
+                    '4': NULL_TOKEN, tokenId: NULL_TOKEN,
+                    '5': NULL, transferAmount: NULL,
+                    '6': charlie.address, to: charlie.address,
+                    '7': NULL, destinationAccount: NULL,
+                    '8': NULL, threshold: NULL
                 }, // Motion created
                 {
-                    '0': '0', motionId: '0',
-                    '1': alice.address, voter: alice.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': alice.address, voter: alice.address,
+                    '3': '1', vote: '1'
                 }, // Alice votes yes
                 {
-                    '0': '0', motionId: '0',
-                    '1': bob.address, voter: bob.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': bob.address, voter: bob.address,
+                    '3': '1', vote: '1'
                 }, // Bob votes yes
                 {
-                    '0': '0', motionId: '0',
-                    '1': charlie.address, member: charlie.address
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': charlie.address, member: charlie.address
                 } // Charlie is removed
             ]);
         });
@@ -565,27 +567,25 @@ describe('test JointAccount', function () {
                 }, // Account created
                 {
                     '0': '0', accountId: '0',
-                    '1': testFullId(), tokenId: testFullId(),
-                    '2': alice.address, from: alice.address,
-                    '3': '1000000', amount: '1000000'
-                }, // Alice deposits
-                {
-                    '0': '0', motionId: '0',
-                    '1': '2', motionType: '2',
-                    '2': alice.address, proposer: alice.address,
-                    '3': NULL_TOKEN, tokenId: NULL_TOKEN,
-                    '4': NULL, transferAmount: NULL,
-                    '5': charlie.address, to: charlie.address,
-                    '6': NULL, threshold: NULL
+                    '1': '0', motionId: '0',
+                    '2': '2', motionType: '2',
+                    '3': alice.address, proposer: alice.address,
+                    '4': NULL_TOKEN, tokenId: NULL_TOKEN,
+                    '5': NULL, transferAmount: NULL,
+                    '6': charlie.address, to: charlie.address,
+                    '7': NULL, destinationAccount: NULL,
+                    '8': NULL, threshold: NULL
                 }, // Motion created
                 {
-                    '0': '0', motionId: '0',
-                    '1': alice.address, voter: alice.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': alice.address, voter: alice.address,
+                    '3': '1', vote: '1'
                 }, // Alice votes yes
                 {
-                    '0': '0', motionId: '0',
-                    '1': charlie.address, member: charlie.address
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': charlie.address, member: charlie.address
                 } // Charlie is removed
             ]);
         });
@@ -715,32 +715,31 @@ describe('test JointAccount', function () {
                 }, // Account created
                 {
                     '0': '0', accountId: '0',
-                    '1': testFullId(), tokenId: testFullId(),
-                    '2': alice.address, from: alice.address,
-                    '3': '1000000', amount: '1000000'
-                }, // Alice deposits
-                {
-                    '0': '0', motionId: '0',
-                    '1': '3', motionType: '3',
-                    '2': alice.address, proposer: alice.address,
-                    '3': NULL_TOKEN, tokenId: NULL_TOKEN,
-                    '4': NULL, transferAmount: NULL,
-                    '5': NULL_ADDRESS, to: NULL_ADDRESS,
-                    '6': '1', threshold: '1'
+                    '1': '0', motionId: '0',
+                    '2': '3', motionType: '3',
+                    '3': alice.address, proposer: alice.address,
+                    '4': NULL_TOKEN, tokenId: NULL_TOKEN,
+                    '5': NULL, transferAmount: NULL,
+                    '6': NULL_ADDRESS, to: NULL_ADDRESS,
+                    '7': NULL, destinationAccount: NULL,
+                    '8': '1', threshold: '1'
                 }, // Motion created
                 {
-                    '0': '0', motionId: '0',
-                    '1': alice.address, voter: alice.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': alice.address, voter: alice.address,
+                    '3': '1', vote: '1'
                 }, // Alice votes yes
                 {
-                    '0': '0', motionId: '0',
-                    '1': bob.address, voter: bob.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': bob.address, voter: bob.address,
+                    '3': '1', vote: '1'
                 }, // Bob votes yes
                 {
-                    '0': '0', motionId: '0',
-                    '1': '1', threshold: '1'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': '1', threshold: '1'
                 } // Threshold is changed
             ]);
         });
@@ -761,27 +760,25 @@ describe('test JointAccount', function () {
                 }, // Account created
                 {
                     '0': '0', accountId: '0',
-                    '1': testFullId(), tokenId: testFullId(),
-                    '2': alice.address, from: alice.address,
-                    '3': '1000000', amount: '1000000'
-                }, // Alice deposits
-                {
-                    '0': '0', motionId: '0',
-                    '1': '3', motionType: '3',
-                    '2': alice.address, proposer: alice.address,
-                    '3': NULL_TOKEN, tokenId: NULL_TOKEN,
-                    '4': NULL, transferAmount: NULL,
-                    '5': NULL_ADDRESS, to: NULL_ADDRESS,
-                    '6': '2', threshold: '2'
+                    '1': '0', motionId: '0',
+                    '2': '3', motionType: '3',
+                    '3': alice.address, proposer: alice.address,
+                    '4': NULL_TOKEN, tokenId: NULL_TOKEN,
+                    '5': NULL, transferAmount: NULL,
+                    '6': NULL_ADDRESS, to: NULL_ADDRESS,
+                    '7': NULL, destinationAccount: NULL,
+                    '8': '2', threshold: '2'
                 }, // Motion created
                 {
-                    '0': '0', motionId: '0',
-                    '1': alice.address, voter: alice.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': alice.address, voter: alice.address,
+                    '3': '1', vote: '1'
                 }, // Alice votes yes
                 {
-                    '0': '0', motionId: '0',
-                    '1': '2', threshold: '2'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': '2', threshold: '2'
                 } // Threshold is changed
             ]);
         });
@@ -821,52 +818,62 @@ describe('test JointAccount', function () {
                     '3': '1000000', amount: '1000000'
                 }, // Alice deposits
                 {
-                    '0': '0', motionId: '0',
-                    '1': '0', motionType: '0',
-                    '2': alice.address, proposer: alice.address,
-                    '3': testTokenId, tokenId: testTokenId,
-                    '4': '50', transferAmount: '50',
-                    '5': charlie.address, to: charlie.address,
-                    '6': NULL, threshold: NULL
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': '0', motionType: '0',
+                    '3': alice.address, proposer: alice.address,
+                    '4': testTokenId, tokenId: testTokenId,
+                    '5': '50', transferAmount: '50',
+                    '6': charlie.address, to: charlie.address,
+                    '7': NULL, destinationAccount: NULL,
+                    '8': NULL, threshold: NULL
                 }, // Transfer motion created
                 {
-                    '0': '0', motionId: '0',
-                    '1': alice.address, voter: alice.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': alice.address, voter: alice.address,
+                    '3': '1', vote: '1'
                 }, // Alice votes yes on the transfer
                 {
-                    '0': '1', motionId: '1',
-                    '1': '3', motionType: '3',
-                    '2': alice.address, proposer: alice.address,
-                    '3': NULL_TOKEN, tokenId: NULL_TOKEN,
-                    '4': NULL, transferAmount: NULL,
-                    '5': NULL_ADDRESS, to: NULL_ADDRESS,
-                    '6': '1', threshold: '1'
+                    '0': '0', accountId: '0',
+                    '1': '1', motionId: '1',
+                    '2': '3', motionType: '3',
+                    '3': alice.address, proposer: alice.address,
+                    '4': NULL_TOKEN, tokenId: NULL_TOKEN,
+                    '5': NULL, transferAmount: NULL,
+                    '6': NULL_ADDRESS, to: NULL_ADDRESS,
+                    '7': NULL, destinationAccount: NULL,
+                    '8': '1', threshold: '1'
                 }, // Change approval threshold motion created
                 {
-                    '0': '1', motionId: '1',
-                    '1': alice.address, voter: alice.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '1', motionId: '1',
+                    '2': alice.address, voter: alice.address,
+                    '3': '1', vote: '1'
                 }, // Alice votes yes on the threshold change
                 {
-                    '0': '1', motionId: '1',
-                    '1': bob.address, voter: bob.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '1', motionId: '1',
+                    '2': bob.address, voter: bob.address,
+                    '3': '1', vote: '1'
                 }, // Bob votes yes on the threshold change
                 {
-                    '0': '1', motionId: '1',
-                    '1': '1', threshold: '1'
+                    '0': '0', accountId: '0',
+                    '1': '1', motionId: '1',
+                    '2': '1', threshold: '1'
                 }, // Threshold is changed
                 {
-                    '0': '0', motionId: '0',
-                    '1': alice.address, voter: alice.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': alice.address, voter: alice.address,
+                    '3': '1', vote: '1'
                 }, // Alice votes yes on the transfer again
                 {
-                    '0': '0', motionId: '0',
-                    '1': testFullId(), tokenId: testFullId(),
-                    '2': charlie.address, to: charlie.address,
-                    '3': '50', amount: '50'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': testFullId(), tokenId: testFullId(),
+                    '3': charlie.address, to: charlie.address,
+                    '4': '50', amount: '50'
                 } // Transfer is executed
             ]);
         });
@@ -979,39 +986,46 @@ describe('test JointAccount', function () {
                     '3': '1000000', amount: '1000000'
                 }, // Alice deposits
                 {
-                    '0': '0', motionId: '0',
-                    '1': '0', motionType: '0',
-                    '2': alice.address, proposer: alice.address,
-                    '3': testTokenId, tokenId: testTokenId,
-                    '4': '50', transferAmount: '50',
-                    '5': charlie.address, to: charlie.address,
-                    '6': NULL, threshold: NULL
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': '0', motionType: '0',
+                    '3': alice.address, proposer: alice.address,
+                    '4': testTokenId, tokenId: testTokenId,
+                    '5': '50', transferAmount: '50',
+                    '6': charlie.address, to: charlie.address,
+                    '7': NULL, destinationAccount: NULL,
+                    '8': NULL, threshold: NULL
                 }, // Motion created
                 {
-                    '0': '0', motionId: '0',
-                    '1': alice.address, voter: alice.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': alice.address, voter: alice.address,
+                    '3': '1', vote: '1'
                 }, // Alice votes yes
                 {
-                    '0': '0', motionId: '0',
-                    '1': alice.address, voter: alice.address,
-                    '2': '0', vote: '0'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': alice.address, voter: alice.address,
+                    '3': '0', vote: '0'
                 }, // Alice votes no
                 {
-                    '0': '0', motionId: '0',
-                    '1': bob.address, voter: bob.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': bob.address, voter: bob.address,
+                    '3': '1', vote: '1'
                 }, // Bob votes yes
                 {
-                    '0': '0', motionId: '0',
-                    '1': alice.address, voter: alice.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': alice.address, voter: alice.address,
+                    '3': '1', vote: '1'
                 }, // Alice votes yes
                 {
-                    '0': '0', motionId: '0',
-                    '1': testFullId(), tokenId: testFullId(),
-                    '2': charlie.address, to: charlie.address,
-                    '3': '50', amount: '50'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': testFullId(), tokenId: testFullId(),
+                    '3': charlie.address, to: charlie.address,
+                    '4': '50', amount: '50'
                 } // Transfer is executed
             ]);
         });
@@ -1100,21 +1114,25 @@ describe('test JointAccount', function () {
                     '3': '1000000', amount: '1000000'
                 }, // Alice deposits
                 {
-                    '0': '0', motionId: '0',
-                    '1': '0', motionType: '0',
-                    '2': alice.address, proposer: alice.address,
-                    '3': testTokenId, tokenId: testTokenId,
-                    '4': '50', transferAmount: '50',
-                    '5': charlie.address, to: charlie.address,
-                    '6': NULL, threshold: NULL
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': '0', motionType: '0',
+                    '3': alice.address, proposer: alice.address,
+                    '4': testTokenId, tokenId: testTokenId,
+                    '5': '50', transferAmount: '50',
+                    '6': charlie.address, to: charlie.address,
+                    '7': NULL, destinationAccount: NULL,
+                    '8': NULL, threshold: NULL
                 }, // Motion created
                 {
-                    '0': '0', motionId: '0',
-                    '1': alice.address, voter: alice.address,
-                    '2': '1', vote: '1'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0',
+                    '2': alice.address, voter: alice.address,
+                    '3': '1', vote: '1'
                 }, // Alice votes yes
                 {
-                    '0': '0', motionId: '0'
+                    '0': '0', accountId: '0',
+                    '1': '0', motionId: '0'
                 } // Alice cancels motion
             ]);
         });

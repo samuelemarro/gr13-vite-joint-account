@@ -90,6 +90,7 @@ contract JointAccount {
         address[] members;
         uint256 approvalThreshold;
         bool isStatic;
+        bool isMemberOnlyDeposit;
         Motion[] motions;
     }
 
@@ -145,13 +146,18 @@ contract JointAccount {
     }
 
     function approvalThreshold(uint256 _accountId) public view returns(uint256) {
-        require(accountExists(_accountId), "Account does not exist");
+        _accountCheck(_accountId);
         return accounts[_accountId].approvalThreshold;
     }
 
     function isStatic(uint256 _accountId) external view returns(bool) {
         _accountCheck(_accountId);
         return accounts[_accountId].isStatic;
+    }
+
+    function isMemberOnlyDeposit(uint256 _accountId) external view returns(bool) {
+        _accountCheck(_accountId);
+        return accounts[_accountId].isMemberOnlyDeposit;
     }
 
     function balanceOf(uint256 _accountId, vitetoken _tokenId) public view returns(uint256) {
@@ -415,7 +421,7 @@ contract JointAccount {
 
     function deposit(uint256 _accountId) external payable {
         require(accountExists(_accountId), "Account does not exist");
-        require(isMember(_accountId, msg.sender), "Not a member");
+        require(!accounts[_accountId].isMemberOnlyDeposit || isMember(_accountId, msg.sender), "Not a member");
 
         balances[_accountId][msg.token] += msg.value;
 

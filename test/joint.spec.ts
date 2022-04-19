@@ -121,24 +121,24 @@ describe('test JointAccount', function () {
 
     describe('account creation', function() {
         it('creates an account', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 1, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 1, 1, 0], {caller: alice});
 
-            expect(await contract.query('getMembers', [0, 0])).to.be.deep.equal([[alice.address, bob.address]]);
-            expect(await contract.query('approvalThreshold', [0, 0])).to.be.deep.equal(['1']);
+            expect(await contract.query('getMembers', [0])).to.be.deep.equal([[alice.address, bob.address]]);
+            expect(await contract.query('approvalThreshold', [0])).to.be.deep.equal(['1']);
         });
 
         it('creates an account with as many members as required votes', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
 
-            expect(await contract.query('getMembers', [0, 0])).to.be.deep.equal([[alice.address, bob.address]]);
-            expect(await contract.query('approvalThreshold', [0, 0])).to.be.deep.equal(['2']);
+            expect(await contract.query('getMembers', [0])).to.be.deep.equal([[alice.address, bob.address]]);
+            expect(await contract.query('approvalThreshold', [0])).to.be.deep.equal(['2']);
             // expect(await contract.query('memberCount', [0, ])).to.be.deep.equal(['2']);
         });
     })
 
     describe('transfer motion', function() {
         it('creates and votes a transfer motion', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
 
             await deployer.sendToken(alice.address, '1000000', testTokenId);
             await alice.receiveAll();
@@ -223,7 +223,7 @@ describe('test JointAccount', function () {
         });
 
         it('creates and immediately approves a transfer motion', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 1, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 1, 1, 0], {caller: alice});
 
             await deployer.sendToken(alice.address, '1000000', testTokenId);
             await alice.receiveAll();
@@ -277,7 +277,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to create a transfer motion without enough funds', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
 
             await deployer.sendToken(alice.address, '1000000', testTokenId);
             await alice.receiveAll();
@@ -290,7 +290,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to execute a transfer motion due to not having enough funds', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
 
             await deployer.sendToken(alice.address, '1000000', testTokenId);
             await alice.receiveAll();
@@ -319,7 +319,7 @@ describe('test JointAccount', function () {
 
     describe('add member motion', function() {
         it('creates and votes an add member motion', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 0, 0], {caller: alice});
 
             await contract.call('createAddMemberMotion', [0, charlie.address], {caller: alice});
 
@@ -390,7 +390,7 @@ describe('test JointAccount', function () {
         });
 
         it('creates and immediately approves an add member motion', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 1, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 1, 0, 0], {caller: alice});
 
             await deployer.sendToken(alice.address, '1000000', testTokenId);
             await alice.receiveAll();
@@ -441,7 +441,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to create an add member motion for a static contract', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
 
             expect(
                 contract.call('createAddMemberMotion', [0, charlie.address], {caller: alice})
@@ -449,7 +449,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to create an add member motion of a member', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 0, 0], {caller: alice});
 
             expect(
                 contract.call('createAddMemberMotion', [0, bob.address], {caller: alice})
@@ -457,7 +457,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to execute an add member motion due to Charlie already being a member', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 0, 0], {caller: alice});
 
             // First motion. Since Charlie is not a member, it can be created
             await contract.call('createAddMemberMotion', [0, charlie.address], {caller: alice});
@@ -481,7 +481,7 @@ describe('test JointAccount', function () {
 
     describe('remove member motion', function() {
         it('creates and votes a remove member motion', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address, charlie.address], 2, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address, charlie.address], 2, 0, 0], {caller: alice});
             await contract.call('createRemoveMemberMotion', [0, charlie.address], {caller: alice});
 
             expect(await contract.query('motionExists', [0, 0])).to.be.deep.equal(['1']);
@@ -551,7 +551,7 @@ describe('test JointAccount', function () {
         });
 
         it('creates and immediately approves a remove member motion', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address, charlie.address], 1, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address, charlie.address], 1, 0, 0], {caller: alice});
 
             await contract.call('createRemoveMemberMotion', [0, charlie.address], {caller: alice});
 
@@ -591,7 +591,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to vote after being removed', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address, charlie.address], 2, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address, charlie.address], 2, 0, 0], {caller: alice});
 
             await deployer.sendToken(alice.address, '1000000', testTokenId);
             await alice.receiveAll();
@@ -613,7 +613,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to create a remove member motion for a static contract', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
 
             expect(
                 contract.call('createRemoveMemberMotion', [0, charlie.address], {caller: alice})
@@ -621,7 +621,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to create a remove member motion of a non-member', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 1, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 1, 0, 0], {caller: alice});
 
             expect(
                 contract.call('createRemoveMemberMotion', [0, charlie.address], {caller: alice})
@@ -629,7 +629,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to execute a remove member motion due to Charlie already being removed', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address, charlie.address], 2, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address, charlie.address], 2, 0, 0], {caller: alice});
 
             // First motion. Since Charlie is a member, it can be created
             await contract.call('createRemoveMemberMotion', [0, charlie.address], {caller: alice});
@@ -651,7 +651,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to execute a remove member motion due to the approval threshold being too high', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address, charlie.address], 2, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address, charlie.address], 2, 0, 0], {caller: alice});
 
             // Since the threshold is 2, it can be created
             await contract.call('createRemoveMemberMotion', [0, charlie.address], {caller: alice});
@@ -676,7 +676,7 @@ describe('test JointAccount', function () {
 
     describe('change threshold motion', function() {
         it('creates and votes a change threshold motion', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 0, 0], {caller: alice});
 
             await contract.call('createChangeThresholdMotion', [0, 1], {caller: alice});
 
@@ -745,7 +745,7 @@ describe('test JointAccount', function () {
         });
 
         it('creates and immediately approves a change threshold motion', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 1, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 1, 0, 0], {caller: alice});
 
             await contract.call('createChangeThresholdMotion', [0, 2], {caller: alice});
 
@@ -784,7 +784,7 @@ describe('test JointAccount', function () {
         });
 
         it('makes voting on a motion possible after decreasing the threshold', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 0, 0], {caller: alice});
 
             await deployer.sendToken(alice.address, '1000000', testTokenId);
             await alice.receiveAll();
@@ -880,7 +880,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to create a change threshold motion for a static contract', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
 
             expect(
                 contract.call('createChangeThresholdMotion', [0, 2], {caller: alice})
@@ -888,7 +888,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to create a change threshold motion with 0', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 1, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 1, 0, 0], {caller: alice});
 
             expect(
                 contract.call('createChangeThresholdMotion', [0, 0], {caller: alice})
@@ -896,7 +896,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to create a change threshold motion with 0', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 1, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 1, 0, 0], {caller: alice});
 
             expect(
                 contract.call('createChangeThresholdMotion', [0, 0], {caller: alice})
@@ -904,7 +904,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to create a change threshold motion higher than the number of members', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 1, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 1, 0, 0], {caller: alice});
 
             expect(
                 contract.call('createChangeThresholdMotion', [0, 3], {caller: alice})
@@ -912,7 +912,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to execute a change threshold motion due to the number of members now being lower', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address, charlie.address], 2, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address, charlie.address], 2, 0, 0], {caller: alice});
 
             // Since 3 <= members.length, it can be created
             await contract.call('createChangeThresholdMotion', [0, 3], {caller: alice});
@@ -934,7 +934,7 @@ describe('test JointAccount', function () {
 
     describe('cancel vote', function() {
         it('cancels a vote', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
 
             await deployer.sendToken(alice.address, '1000000', testTokenId);
             await alice.receiveAll();
@@ -1033,7 +1033,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to cancel a vote twice (as proposer)', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
 
             await deployer.sendToken(alice.address, '1000000', testTokenId);
             await alice.receiveAll();
@@ -1051,7 +1051,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to cancel a vote twice (as non-proposer)', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address, charlie.address], 3, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address, charlie.address], 3, 1, 0], {caller: alice});
 
             await deployer.sendToken(alice.address, '1000000', testTokenId);
             await alice.receiveAll();
@@ -1071,7 +1071,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to cancel a vote without voting', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
 
             await deployer.sendToken(alice.address, '1000000', testTokenId);
             await alice.receiveAll();
@@ -1089,7 +1089,7 @@ describe('test JointAccount', function () {
 
     describe('cancel motion', function() {
         it('cancels a motion', async function () {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
 
             await deployer.sendToken(alice.address, '1000000', testTokenId);
             await alice.receiveAll();
@@ -1140,7 +1140,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to cancel an inactive motion', async function () {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
 
             await deployer.sendToken(alice.address, '1000000', testTokenId);
             await alice.receiveAll();
@@ -1158,7 +1158,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to vote on an inactive motion', async function () {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
 
             await deployer.sendToken(alice.address, '1000000', testTokenId);
             await alice.receiveAll();
@@ -1177,7 +1177,7 @@ describe('test JointAccount', function () {
 
     describe('motion checks', function() {
         it('fails to create a motion without being a member', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
 
             await deployer.sendToken(alice.address, '1000000', testTokenId);
             await alice.receiveAll();
@@ -1190,7 +1190,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to vote on a non-existent motion', async function() {
-            await contract.call('createAccount', [0, [alice.address, bob.address], 2, 1], {caller: alice});
+            await contract.call('createAccount', [0, [alice.address, bob.address], 2, 1, 0], {caller: alice});
 
             expect(
                 contract.call('voteMotion', [0, 0], {caller: bob})
@@ -1198,7 +1198,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to vote without being a member', async function() {
-            await contract.call('createAccount', [0, [alice.address, bob.address], 2, 1], {caller: alice});
+            await contract.call('createAccount', [0, [alice.address, bob.address], 2, 1, 0], {caller: alice});
 
             await deployer.sendToken(alice.address, '1000000', testTokenId);
             await alice.receiveAll();
@@ -1214,7 +1214,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to vote twice (as proposer)', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
 
             await deployer.sendToken(alice.address, '1000000', testTokenId);
             await alice.receiveAll();
@@ -1230,7 +1230,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to vote twice (as non-proposer)', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 2, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
 
             await deployer.sendToken(alice.address, '1000000', testTokenId);
             await alice.receiveAll();
@@ -1248,7 +1248,7 @@ describe('test JointAccount', function () {
         });
 
         it('fails to vote an inactive motion', async function() {
-            await contract.call('createAccount', [[alice.address, bob.address], 1, 1], {caller: alice});
+            await contract.call('createAccount', [[alice.address, bob.address], 1, 1, 0], {caller: alice});
 
             await deployer.sendToken(alice.address, '1000000', testTokenId);
             await alice.receiveAll();

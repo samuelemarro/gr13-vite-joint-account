@@ -430,6 +430,34 @@ describe('test JointAccount', function () {
                 contract.call('voteMotion', [0, 1], {caller: bob})
             ).to.eventually.be.rejectedWith('revert');
         });
+
+        it('fails to create a transfer motion to both an external and an internal account', async function() {
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, charlie.address], 2, 1, 0], {caller: alice});
+
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});
+            await waitForContractReceive(testTokenId);
+
+            expect(
+                contract.call('createTransferMotion', [0, testTokenId, '50', charlie.address, '1'], {caller: alice})
+            ).to.be.eventually.rejectedWith('revert');
+        });
+
+        it('fails to create a transfer motion to neither an external nor an internal account', async function() {
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
+            await contract.call('createAccount', [[alice.address, charlie.address], 2, 1, 0], {caller: alice});
+
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});
+            await waitForContractReceive(testTokenId);
+
+            expect(
+                contract.call('createTransferMotion', [0, testTokenId, '50', NULL_ADDRESS, NULL], {caller: alice})
+            ).to.be.eventually.rejectedWith('revert');
+        });
     })
 
     describe('internal transfer motion', function() {

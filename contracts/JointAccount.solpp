@@ -146,6 +146,10 @@ contract JointAccount {
         require(isMember(_accountId, msg.sender), "Not a member");
     }
 
+    function _balanceCheck(uint256 _accountId, vitetoken _tokenId, uint256 _transferAmount) private view {
+        require(balanceOf(_accountId, _tokenId) >= _transferAmount, "Insufficient balance");
+    }
+
     // ===Getters===
 
     /// @notice Returns true if an account exists
@@ -325,11 +329,11 @@ contract JointAccount {
     /// @param _destinationAccount The account id to transfer to. Must be NULL if _to is specified
     function createTransferMotion(uint256 _accountId, vitetoken _tokenId, uint256 _transferAmount, address _to, uint256 _destinationAccount) external {
         _motionChecks(_accountId);
-        require(balanceOf(_accountId, _tokenId) >= _transferAmount, "Insufficient balance");
+        _balanceCheck(_accountId, _tokenId, _transferAmount);
         accounts[_accountId].motions.push(Motion(MotionType.TRANSFER, _tokenId, _transferAmount, _to, _destinationAccount, NULL, msg.sender, 0, true));
 
-        require(_to != NULL_ADDRESS || _destinationAccount != NULL, "Address or destination account must be specified");
-        require(_to == NULL_ADDRESS || _destinationAccount == NULL, "Cannot specify both address and destination account");
+        require(_to != NULL_ADDRESS || _destinationAccount != NULL, "Address/destination account must be specified");
+        require(_to == NULL_ADDRESS || _destinationAccount == NULL, "Cannot specify both address & destination account");
 
         if (_destinationAccount != NULL) {
             // Account existence check is handled by isMember
@@ -390,7 +394,7 @@ contract JointAccount {
     }
 
     function _transfer(uint256 _accountId, uint256 _motionId, vitetoken _tokenId, uint256 _transferAmount, address _to, uint256 _destinationAccount) internal {
-        require(balanceOf(_accountId, _tokenId) >= _transferAmount, "Insufficient balance");
+        _balanceCheck(_accountId, _tokenId, _transferAmount);
         balances[_accountId][_tokenId] -= _transferAmount;
 
         if (_to == NULL_ADDRESS) {
@@ -427,7 +431,7 @@ contract JointAccount {
     }
 
     function _removeMember(uint256 _accountId, uint256 _motionId, address _member) internal {
-        require(accounts[_accountId].approvalThreshold < accounts[_accountId].members.length, "Removing would make the threshold impossible to reach");
+        require(accounts[_accountId].approvalThreshold < accounts[_accountId].members.length, "Removing would make the threshold too high");
 
         uint256 index = _findMember(_accountId, _member);
         require(index != NULL, "Address is not a member");
@@ -505,10 +509,9 @@ contract JointAccount {
     /// @param _accountId Account id
     /// @param _motionId The id of the motion to cancel the vote on
     function cancelVote(uint256 _accountId, uint256 _motionId) external {
-        require(accountExists(_accountId), "Account does not exist");
-        require(isMember(_accountId, msg.sender), "Not a member");
+        _motionChecks(_accountId);
         require(accounts[_accountId].motions[_motionId].active, "Motion is not active");
-        require(votes[_accountId][_motionId][msg.sender], "You have not voted on this motion");
+        require(votes[_accountId][_motionId][msg.sender], "Not voted on this motion");
         votes[_accountId][_motionId][msg.sender] = false;
         accounts[_accountId].motions[_motionId].voteCount--;
 
@@ -523,7 +526,7 @@ contract JointAccount {
         _motionChecks(_accountId);
         require(isMember(_accountId, msg.sender), "Not a member");
         require(accounts[_accountId].motions[_motionId].active, "Motion is not active");
-        require(accounts[_accountId].motions[_motionId].proposer == msg.sender, "You are not the proposer of this motion");
+        require(accounts[_accountId].motions[_motionId].proposer == msg.sender, "Not the proposer of this motion");
         accounts[_accountId].motions[_motionId].active = false;
 
         emit MotionCancelled(_accountId, _motionId);

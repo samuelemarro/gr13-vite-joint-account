@@ -775,6 +775,28 @@ describe('test JointAccount', function () {
                 contract.call('createTransferMotion', [0, testTokenId, '1000000', NULL_ADDRESS, '1'], {caller: bob})
             ).to.be.eventually.rejectedWith('revert');
         });
+
+        it('fails to execute an internal transfer motion to a member-only deposit account after being removed', async function() {
+            await contract.call('createAccount', [[alice.address, bob.address], 2, 1, 0], {caller: alice});
+            // Non-static and member-only
+            await contract.call('createAccount', [[alice.address, bob.address], 1, 0, 1], {caller: alice});
+
+            await deployer.sendToken(alice.address, '1000000', testTokenId);
+            await alice.receiveAll();
+            await contract.call('deposit', [0], {caller: alice, amount: '1000000', tokenId: testTokenId});;
+            await waitForContractReceive(testTokenId);
+
+            // First motion. Since Bob is a member of account #1, it can be created
+            await contract.call('createTransferMotion', [0, testTokenId, '1000000', NULL_ADDRESS, '1'], {caller: bob});
+
+            // Remove Bob from account #1
+            await contract.call('createRemoveMemberMotion', [1, bob.address], {caller: alice});
+
+            // Alice votes the first motion, fails
+            expect(
+                contract.call('voteMotion', [0, 1], {caller: alice})
+            ).to.eventually.be.rejectedWith('revert');
+        });
     })
 
     describe('add member motion', function() {

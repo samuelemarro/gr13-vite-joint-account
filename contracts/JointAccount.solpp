@@ -215,13 +215,14 @@ contract JointAccount {
         return _findMember(_accountId, _member) != NULL;
     }
 
-    /*
     // Removed to reduce contract size
+    /*
     /// @notice Returns the number of members
     function memberCount(uint256 _accountId) external view returns (uint256) {
         require(accountExists(_accountId), "Account does not exist");
         return accounts[_accountId].members.length;
-    }*/
+    }
+    */
 
     /// @notice Returns true if a motion exists
     ///
@@ -332,7 +333,8 @@ contract JointAccount {
     /// @param _tokenId The token id of the transfer
     /// @param _transferAmount The amount to transfer
     /// @param _to The address to transfer to. Must be NULL_ADDRESS if _destinationAccount is specified
-    /// @param _destinationAccount The account id to transfer to. Must be NULL if _to is specified
+    /// @param _destinationAccount The account id to transfer to. Must be NULL if _to is specified.
+    ///        If the proposer is not a member and the destination is a member-only deposit account, the transfer will fail
     function createTransferMotion(uint256 _accountId, vitetoken _tokenId, uint256 _transferAmount, address _to, uint256 _destinationAccount) external {
         _motionChecks(_accountId);
         _balanceCheck(_accountId, _tokenId, _transferAmount);

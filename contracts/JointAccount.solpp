@@ -103,6 +103,12 @@ contract JointAccount {
     
     JointSubAccount[] private accounts;
 
+    /// @notice Creates a new joint account
+    ///
+    /// @param _members Account members
+    /// @param _approvalThreshold Approval threshold for motions
+    /// @param _isStatic If true, members cannot be added or removed, and the approval threshold cannot be changed
+    /// @param _isMemberOnlyDeposit If true, only members can deposit to the joint account
     function createAccount(address[] memory _members, uint256 _approvalThreshold, bool _isStatic, bool _isMemberOnlyDeposit) external returns(uint256) {
         require(_members.length > 0, "At least one member must be specified");
         require(_approvalThreshold > 0, "Approval threshold must be > 0");
@@ -142,25 +148,41 @@ contract JointAccount {
 
     // ===Getters===
 
+    /// @notice Returns true if an account exists
+    ///
+    /// @param _accountId Account Id
     function accountExists(uint256 _accountId) public view returns(bool) {
         return _accountId < accounts.length;
     }
 
+    /// @notice Returns the approval threshold of an account
+    ///
+    /// @param _accountId Account Id
     function approvalThreshold(uint256 _accountId) public view returns(uint256) {
         _accountCheck(_accountId);
         return accounts[_accountId].approvalThreshold;
     }
 
+    /// @notice Returns true if an account is static
+    ///
+    /// @param _accountId Account Id
     function isStatic(uint256 _accountId) external view returns(bool) {
         _accountCheck(_accountId);
         return accounts[_accountId].isStatic;
     }
 
+    /// @notice Returns true if an account has a member-only deposit policy
+    ///
+    /// @param _accountId Account Id
     function isMemberOnlyDeposit(uint256 _accountId) external view returns(bool) {
         _accountCheck(_accountId);
         return accounts[_accountId].isMemberOnlyDeposit;
     }
 
+    /// @notice Returns the balance of an account
+    ///
+    /// @param _accountId Account Id
+    /// @param _tokenId Token Id
     function balanceOf(uint256 _accountId, vitetoken _tokenId) public view returns(uint256) {
         _accountCheck(_accountId);
         return balances[_accountId][_tokenId];

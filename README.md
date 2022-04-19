@@ -7,7 +7,8 @@ This contract is my submission to GitCoin's Round 13 Hackathon "Joint Account" b
  - Transfer tokens
  - Add or remove members
  - Change the vote threshold
-- Create a static contract (members cannot be added or removed, threshold cannot be changed)
+- Create a static account (members cannot be added or removed, threshold cannot be changed)
+- Create a member-only deposit account (only members can deposit)
 - Cancel and re-vote as many times as you want
 - Cancel entire proposals
 - Getters for UIs
@@ -37,3 +38,6 @@ In order to both save quota and provide a consistent contract interaction flow, 
 - Removing a member doesn't change the approval threshold
 - Removing a member doesn't remove that member's votes on motions
 - Proposals cannot be edited; instead, a new proposal must be submitted (this prevents frontrunning attacks where the proposal is edited after the vote transaction is signed)
+- A transfer from a joint account A to a member-only deposit joint account B can be performed only 
+- All sanity checks for motions (e.g. sufficient balance for a transfer) are performed both at motion creation time and execution time.
+  The only skipped checks are the ones regarding factors that cannot change between motion creation and execution (e.g. if a joint account is static)
